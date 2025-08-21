@@ -9,8 +9,8 @@ import 'package:pos/Controller/SaleProvider.dart';
 import 'package:pos/Helper/Locale/LanguageController.dart';
 import 'package:pos/Helper/Service/Service.dart';
 import 'package:pos/View/Screens/MainLayout.dart';
-
 import 'package:provider/provider.dart';
+import 'package:smart_sizer/smart_sizer.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
@@ -52,19 +52,25 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<LanguageController>(
       builder: (context, value, child) {
-        return MaterialApp(
-          debugShowCheckedModeBanner: false,
-          locale: value.language,
-          supportedLocales: value.supportLanguage,
-          localizationsDelegates: [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          title: 'POS',
-          theme: ThemeData(primarySwatch: Colors.blue),
-
-          home: const MainLayout(),
+        return SizeBuilder(
+          baseSize: Size(360, 650),
+          height: context.screenHeight,
+          width: context.screenWidth,
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            locale: value.language,
+            supportedLocales: value.supportLanguage,
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+                        title: 'POS',
+            // theme: AppThemes.lightTheme,
+            // darkTheme: AppThemes.darkTheme,
+            themeMode: ThemeMode.system, // Or ThemeMode.light, ThemeMode.dark
+            home: const MainLayout(),
+          ),
         );
       },
     );

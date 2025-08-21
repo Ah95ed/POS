@@ -17,14 +17,14 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   provider: 
-  smart_sizer: ^1.0.7
+  smart_sizer: 
   sqflite_common_ffi:
   sqflite:
   path:
   path_provider:
   device_preview:
-  pdf: ^3.10.4
-  printing: ^5.11.0
+  pdf: 
+  printing: 
   
 
   cupertino_icons: 

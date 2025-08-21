@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Helper/Locale/Language.dart';
+import 'package:pos/Helper/Service/Service.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/DashboardProvider.dart';
 import 'package:pos/Model/DashboardModel.dart';
+import 'package:pos/View/style/app_colors.dart';
+import 'package:smart_sizer/smart_sizer.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -25,24 +29,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text(
-          'لوحة التحكم',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-        ),
-        backgroundColor: Colors.blue[700],
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () {
-              context.read<DashboardProvider>().refreshDashboard();
-            },
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.background,
+      appBar: DeviceUtils.isMobile(context)
+          ? null
+          : AppBar(
+              // centerTitle: true,
+              // title:  Text(
+              // trans[Language.dashboard] ,
+              //   style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.background),
+              // ),
+              backgroundColor: AppColors.accent,
+              elevation: 4,
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.refresh, color: AppColors.background),
+                  onPressed: () {
+                    context.read<DashboardProvider>().refreshDashboard();
+                  },
+                ),
+              ],
+            ),
       body: Consumer<DashboardProvider>(
         builder: (context, dashboardProvider, child) {
           if (dashboardProvider.isLoading) {
@@ -54,11 +61,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: AppColors.textMain.withOpacity(0.6),
+                  ),
                   SizedBox(height: screenHeight * 0.02),
                   Text(
                     dashboardProvider.errorMessage,
-                    style: TextStyle(fontSize: 16, color: Colors.red[700]),
+                    style: TextStyle(fontSize: 16, color: AppColors.textMain),
                     textAlign: TextAlign.center,
                   ),
                   SizedBox(height: screenHeight * 0.02),
@@ -122,14 +133,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue[700]!, Colors.blue[500]!],
+          colors: [AppColors.accent, AppColors.curveTop1],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
+            color: AppColors.shadow.withOpacity(0.3),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -143,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppColors.background,
             ),
           ),
           SizedBox(height: screenHeight * 0.01),
@@ -151,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             'إدارة شاملة لمتجرك',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.9),
+              color: AppColors.background.withOpacity(0.9),
             ),
           ),
         ],
@@ -174,7 +185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: AppColors.textMain,
           ),
         ),
         SizedBox(height: screenHeight * 0.02),
@@ -205,11 +216,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(15),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.shadow.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -231,12 +242,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SizedBox(height: screenHeight * 0.005),
           Text(
             stat.title,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.textMain.withOpacity(0.7),
+            ),
             textAlign: TextAlign.center,
           ),
           Text(
             stat.subtitle,
-            style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+            style: TextStyle(
+              fontSize: 10,
+              color: AppColors.textMain.withOpacity(0.5),
+            ),
           ),
         ],
       ),
@@ -261,7 +278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                color: AppColors.textMain,
               ),
             ),
             TextButton(
@@ -275,11 +292,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SizedBox(height: screenHeight * 0.02),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(15),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: AppColors.shadow.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -291,7 +308,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Center(
                     child: Text(
                       'لا توجد منتجات',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textMain.withOpacity(0.7),
+                      ),
                     ),
                   ),
                 )
@@ -299,17 +319,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: topItems.length,
-                  separatorBuilder: (context, index) =>
-                      Divider(color: Colors.grey[200], height: 1),
+                  separatorBuilder: (context, index) => Divider(
+                    color: AppColors.textMain.withOpacity(0.2),
+                    height: 1,
+                  ),
                   itemBuilder: (context, index) {
                     final item = topItems[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: Colors.blue[100],
+                        backgroundColor: AppColors.accent.withOpacity(0.2),
                         child: Text(
                           '${index + 1}',
                           style: TextStyle(
-                            color: Colors.blue[700],
+                            color: AppColors.accent,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -386,11 +408,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SizedBox(height: screenHeight * 0.02),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(15),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withOpacity(0.1),
+                color: AppColors.shadow.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 5),
               ),
@@ -410,8 +432,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: transactions.take(5).length,
-                  separatorBuilder: (context, index) =>
-                      Divider(color: Colors.grey[200], height: 1),
+                  separatorBuilder: (context, index) => Divider(
+                    color: AppColors.textMain.withOpacity(0.2),
+                    height: 1,
+                  ),
                   itemBuilder: (context, index) {
                     final transaction = transactions[index];
                     return ListTile(

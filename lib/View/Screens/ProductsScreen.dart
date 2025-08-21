@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Helper/Locale/Language.dart';
+import 'package:pos/Helper/Service/Service.dart';
+import 'package:pos/View/style/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/View/Widgets/ProductCard.dart';
 import 'package:pos/View/Widgets/AddEditProductDialog.dart';
+import 'package:smart_sizer/smart_sizer.dart';
 
 /// شاشة إدارة المنتجات
 class ProductsScreen extends StatefulWidget {
@@ -34,12 +38,12 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    // final screenWidth = MediaQuery.of(context).size.width;
+    // final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: _buildAppBar(),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: DeviceUtils.isMobile(context) ? null: _buildAppBar(),
       body: Consumer<ProductProvider>(
         builder: (context, productProvider, child) {
           if (productProvider.isLoading && productProvider.products.isEmpty) {
@@ -53,13 +57,19 @@ class _ProductsScreenState extends State<ProductsScreen> {
           return Column(
             children: [
               // شريط البحث والفلاتر
-              _buildSearchAndFilters(productProvider, screenWidth),
+              _buildSearchAndFilters(productProvider, context.screenWidth),
 
               // إحصائيات سريعة
-              _buildQuickStats(productProvider, screenWidth, screenHeight),
+              _buildQuickStats(
+                productProvider,
+                context.screenWidth,
+                context.screenHeight,
+              ),
 
               // قائمة المنتجات
-              Expanded(child: _buildProductsList(productProvider, screenWidth)),
+              Expanded(
+                child: _buildProductsList(productProvider, context.screenWidth),
+              ),
             ],
           );
         },
@@ -75,7 +85,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
         'إدارة المنتجات',
         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
       ),
-      backgroundColor: Colors.blue[700],
+            backgroundColor: AppColors.accent,
       elevation: 0,
       automaticallyImplyLeading: false,
       actions: [
@@ -96,16 +106,16 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             _getSortIcon(type),
                             size: 20,
                             color: provider.sortType == type
-                                ? Colors.blue[700]
-                                : Colors.grey[600],
+                                ? Theme.of(context).primaryColor
+                                : Theme.of(context).iconTheme.color,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             type.displayName,
                             style: TextStyle(
                               color: provider.sortType == type
-                                  ? Colors.blue[700]
-                                  : Colors.black,
+                                  ? Theme.of(context).primaryColor
+                                  : Theme.of(context).iconTheme.color,
                               fontWeight: provider.sortType == type
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -132,7 +142,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   /// بناء شريط البحث والفلاتر
   Widget _buildSearchAndFilters(ProductProvider provider, double screenWidth) {
     return Container(
-      padding: EdgeInsets.all(screenWidth * 0.04),
+      padding: EdgeInsets.all(context.getMinSize(4)),
       color: Colors.white,
       child: Column(
         children: [
@@ -140,7 +150,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'البحث في المنتجات...',
+              hintText: trans[Language.search],
               prefixIcon: const Icon(Icons.search),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
@@ -165,18 +175,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
             },
           ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: context.getHeight(8)),
 
           // معلومات الترتيب
           Row(
             children: [
               Icon(Icons.sort, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
+              SizedBox(width: context.getWidth(3)),
               Text(
-                'مرتب حسب: ${provider.sortType.displayName}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                '${trans[Language.sortby]} ${provider.sortType.displayName}',
+                style: TextStyle(
+                  fontSize: context.getFontSize(6),
+                  color: Colors.grey[600],
+                ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: context.getWidth(3)),
               Icon(
                 provider.sortAscending
                     ? Icons.arrow_upward
@@ -186,7 +199,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
               const Spacer(),
               Text(
-                '${provider.products.length} من ${provider.totalProducts} منتج',
+                '${provider.products.length} ${trans[Language.from]} ${provider.totalProducts}} ${provider.totalProducts} ${trans[Language.product]}',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],

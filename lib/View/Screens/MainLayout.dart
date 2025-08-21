@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Helper/Locale/Language.dart';
+import 'package:pos/Helper/Locale/LanguageController.dart';
+import 'package:pos/Helper/Log/LogApp.dart';
+import 'package:pos/Helper/Service/Service.dart';
 import 'package:pos/View/Screens/DashboardScreen.dart';
 import 'package:pos/View/Screens/ProductsScreen.dart';
 import 'package:pos/View/Screens/SalesScreen.dart';
 import 'package:pos/View/Screens/PurchasesScreen.dart';
 import 'package:pos/View/Screens/ReportsScreen.dart';
 import 'package:pos/View/Screens/SettingsScreen.dart';
+import 'package:pos/View/style/app_colors.dart';
+import 'package:smart_sizer/smart_sizer.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -27,17 +33,17 @@ class _MainLayoutState extends State<MainLayout> {
 
   final List<NavigationItem> _navigationItems = [
     NavigationItem(
-      title: 'لوحة التحكم',
+      title: trans[Language.dashboard],
       icon: Icons.dashboard,
       selectedIcon: Icons.dashboard,
     ),
     NavigationItem(
-      title: 'المنتجات',
+      title: trans[Language.warehouse],
       icon: Icons.inventory_2_outlined,
       selectedIcon: Icons.inventory_2,
     ),
     NavigationItem(
-      title: 'المبيعات',
+      title: trans[Language.pointofsale],
       icon: Icons.point_of_sale_outlined,
       selectedIcon: Icons.point_of_sale,
     ),
@@ -60,10 +66,22 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isWideScreen = screenWidth > 800;
-
+    final isWideScreen = context.screenHeight > 800;
     return Scaffold(
+      appBar: DeviceUtils.isMobile(context)
+          ? AppBar(
+              // title: Text(trans[Language.dashboard]),
+              // centerTitle: true,
+              // actions: [
+              //   IconButton(
+              //     icon: const Icon(Icons.language),
+              //     onPressed: () {
+              //       // LanguageController.changeLanguage(context);
+              //     },
+              //   ),
+              // ],
+            )
+          : null,
       body: Row(
         children: [
           // Side Navigation
@@ -73,18 +91,41 @@ class _MainLayoutState extends State<MainLayout> {
           Expanded(child: _screens[_selectedIndex]),
         ],
       ),
-      drawer: !isWideScreen ? _buildDrawer() : null,
+      drawer: !isWideScreen
+          ? _buildDrawer()
+          : Drawer(
+              child: Column(
+                children: [
+                  // Header
+                  _buildNavigationHeader(),
+
+                  // Navigation Items
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: _navigationItems.length,
+                      itemBuilder: (context, index) {
+                        return _buildNavigationTile(index, isDrawer: true);
+                      },
+                    ),
+                  ),
+
+                  // Footer
+                  _buildNavigationFooter(),
+                ],
+              ),
+            ),
     );
   }
 
   Widget _buildSideNavigation() {
     return Container(
-      width: 280,
+      width: context.getWidth(100),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.shadow,
             blurRadius: 10,
             offset: const Offset(2, 0),
           ),
@@ -140,10 +181,11 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildNavigationHeader() {
     return Container(
-      height: 200,
+      height: context.getHeight(120),
+      width: context.getWidth(100),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue[700]!, Colors.blue[500]!],
+          colors: [AppColors.accent, AppColors.curveTop1],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -152,26 +194,33 @@ class _MainLayoutState extends State<MainLayout> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: context.getHeight(60),
+            height: context.getHeight(60),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: AppColors.background.withOpacity(0.7),
               borderRadius: BorderRadius.circular(40),
             ),
-            child: const Icon(Icons.store, size: 40, color: Colors.white),
+            child: Icon(
+              Icons.store,
+              size: context.getMinSize(24),
+              color: AppColors.textMain,
+            ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'نظام نقطة البيع',
+          SizedBox(height: context.getHeight(8)),
+          Text(
+            trans[Language.pos],
             style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
+              color: AppColors.background,
+              fontSize: context.getFontSize(12),
               fontWeight: FontWeight.bold,
             ),
           ),
-          const Text(
+          Text(
             'إدارة شاملة لمتجرك',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(
+              color: AppColors.background.withOpacity(0.8),
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -187,19 +236,21 @@ class _MainLayoutState extends State<MainLayout> {
       child: ListTile(
         leading: Icon(
           isSelected ? item.selectedIcon : item.icon,
-          color: isSelected ? Colors.blue[700] : Colors.grey[600],
+          color: isSelected
+              ? AppColors.accent
+              : AppColors.textMain.withOpacity(0.7),
           size: 24,
         ),
         title: Text(
           item.title,
           style: TextStyle(
-            color: isSelected ? Colors.blue[700] : Colors.grey[800],
+            color: isSelected ? AppColors.accent : AppColors.textMain,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             fontSize: 16,
           ),
         ),
         selected: isSelected,
-        selectedTileColor: Colors.blue[50],
+        selectedTileColor: AppColors.accent.withOpacity(0.1),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: () {
           setState(() {
@@ -217,22 +268,33 @@ class _MainLayoutState extends State<MainLayout> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+        border: Border(
+          top: BorderSide(color: AppColors.textMain.withOpacity(0.2)),
+        ),
       ),
       child: Column(
         children: [
           ListTile(
-            leading: Icon(Icons.help_outline, color: Colors.grey[600]),
-            title: Text('المساعدة', style: TextStyle(color: Colors.grey[800])),
+            leading: Icon(
+              Icons.help_outline,
+              color: AppColors.textMain.withOpacity(0.7),
+            ),
+            title: Text(
+              'المساعدة',
+              style: TextStyle(color: AppColors.textMain),
+            ),
             onTap: () {
               _showHelpDialog();
             },
           ),
           ListTile(
-            leading: Icon(Icons.info_outline, color: Colors.grey[600]),
+            leading: Icon(
+              Icons.info_outline,
+              color: AppColors.textMain.withOpacity(0.7),
+            ),
             title: Text(
               'حول التطبيق',
-              style: TextStyle(color: Colors.grey[800]),
+              style: TextStyle(color: AppColors.textMain),
             ),
             onTap: () {
               _showAboutDialog();

@@ -44,7 +44,7 @@ class _SalesScreenState extends State<SalesScreen> {
     final isWideScreen = screenWidth > 800;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(),
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, child) {
@@ -67,7 +67,7 @@ class _SalesScreenState extends State<SalesScreen> {
         'نقطة البيع',
         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
       ),
-      backgroundColor: Colors.green[700],
+            backgroundColor: Theme.of(context).primaryColor,
       elevation: 0,
       automaticallyImplyLeading: false,
       actions: [
