@@ -5,8 +5,14 @@ import 'package:pos/View/style/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/View/Screens/EnhancedAlertsScreen.dart';
+import 'package:pos/View/Screens/EnhancedArchivedProductsScreen.dart';
+import 'package:pos/View/Screens/InventoryReportsScreen.dart';
 import 'package:pos/View/Widgets/ProductCard.dart';
 import 'package:pos/View/Widgets/AddEditProductDialog.dart';
+import 'package:pos/View/Widgets/EnhancedInventorySummaryCard.dart';
+import 'package:pos/View/Widgets/InventoryAlertsWidget.dart';
+import 'package:pos/View/Widgets/QuickFiltersWidget.dart';
 import 'package:smart_sizer/smart_sizer.dart';
 
 /// شاشة إدارة المنتجات
@@ -20,6 +26,7 @@ class ProductsScreen extends StatefulWidget {
 class _ProductsScreenState extends State<ProductsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  String _selectedFilter = 'all';
 
   @override
   void initState() {
@@ -38,12 +45,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final screenWidth = MediaQuery.of(context).size.width;
-    // final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: DeviceUtils.isMobile(context) ? null: _buildAppBar(),
+      appBar: DeviceUtils.isMobile(context) ? null : _buildAppBar(),
       body: Consumer<ProductProvider>(
         builder: (context, productProvider, child) {
           if (productProvider.isLoading && productProvider.products.isEmpty) {
@@ -58,14 +63,32 @@ class _ProductsScreenState extends State<ProductsScreen> {
             children: [
               // شريط البحث والفلاتر
               _buildSearchAndFilters(productProvider, context.screenWidth),
-
-              // إحصائيات سريعة
-              _buildQuickStats(
-                productProvider,
-                context.screenWidth,
-                context.screenHeight,
+          
+              // الفلاتر السريعة
+              QuickFiltersWidget(
+                selectedFilter: _selectedFilter,
+                onFilterChanged: (filter) {
+                  setState(() {
+                    _selectedFilter = filter;
+                  });
+                  _applyFilter(productProvider, filter);
+                },
               ),
-
+          
+              // تنبيهات المخزون
+              InventoryAlertsWidget(products: productProvider.products),
+          
+              // ملخص المخزون
+              EnhancedInventorySummaryCard(
+                products: productProvider.products,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InventoryReportsScreen(),
+                  ),
+                ),
+              ),
+          
               // قائمة المنتجات
               Expanded(
                 child: _buildProductsList(productProvider, context.screenWidth),
@@ -78,6 +101,33 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
+  /// تطبيق الفلتر
+  void _applyFilter(ProductProvider provider, String filter) {
+    switch (filter) {
+      case 'all':
+        provider.clearFilters();
+        break;
+      case 'active':
+        provider.filterByStatus(isActive: true);
+        break;
+      case 'out_of_stock':
+        provider.filterByStock(isOutOfStock: true);
+        break;
+      case 'low_stock':
+        provider.filterByStock(isLowStock: true);
+        break;
+      case 'expired':
+        provider.filterByExpiry(isExpired: true);
+        break;
+      case 'near_expiry':
+        provider.filterByExpiry(isNearExpiry: true);
+        break;
+      case 'archived':
+        provider.filterByStatus(isArchived: true);
+        break;
+    }
+  }
+
   /// بناء شريط التطبيق
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -85,10 +135,74 @@ class _ProductsScreenState extends State<ProductsScreen> {
         'إدارة المنتجات',
         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
       ),
-            backgroundColor: AppColors.accent,
+      backgroundColor: AppColors.accent,
       elevation: 0,
       automaticallyImplyLeading: false,
       actions: [
+        // زر التنبيهات
+        Consumer<ProductProvider>(
+          builder: (context, provider, child) {
+            final alerts = provider.getAlerts();
+            return Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications, color: Colors.white),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const EnhancedAlertsScreen(),
+                    ),
+                  ),
+                ),
+                if (alerts.isNotEmpty)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${alerts.length}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+        // زر التقارير
+        IconButton(
+          icon: const Icon(Icons.analytics, color: Colors.white),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const InventoryReportsScreen(),
+            ),
+          ),
+        ),
+
+        // زر الأرشيف
+        IconButton(
+          icon: const Icon(Icons.archive, color: Colors.white),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const EnhancedArchivedProductsScreen(),
+            ),
+          ),
+        ),
         Consumer<ProductProvider>(
           builder: (context, provider, child) {
             return PopupMenuButton<ProductSortType>(
@@ -220,36 +334,76 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: _buildStatCard(
-              'إجمالي المنتجات',
-              stats.totalProducts.toString(),
-              Icons.inventory_2,
-              Colors.blue[700]!,
-              screenWidth,
-            ),
+          // الصف الأول
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'إجمالي المنتجات',
+                  stats.totalProducts.toString(),
+                  Icons.inventory_2,
+                  Colors.blue[700]!,
+                  screenWidth,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              Expanded(
+                child: _buildStatCard(
+                  'مخزون منخفض',
+                  stats.lowStockProducts.toString(),
+                  Icons.warning,
+                  Colors.orange[700]!,
+                  screenWidth,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              Expanded(
+                child: _buildStatCard(
+                  'نافد المخزون',
+                  stats.outOfStockProducts.toString(),
+                  Icons.error,
+                  Colors.red[700]!,
+                  screenWidth,
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: screenWidth * 0.02),
-          Expanded(
-            child: _buildStatCard(
-              'مخزون منخفض',
-              stats.lowStockProducts.toString(),
-              Icons.warning,
-              Colors.orange[700]!,
-              screenWidth,
-            ),
-          ),
-          SizedBox(width: screenWidth * 0.02),
-          Expanded(
-            child: _buildStatCard(
-              'نافد المخزون',
-              stats.outOfStockProducts.toString(),
-              Icons.error,
-              Colors.red[700]!,
-              screenWidth,
-            ),
+          SizedBox(height: screenWidth * 0.02),
+          // الصف الثاني
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  'قريب الانتهاء',
+                  stats.nearExpiryProducts.toString(),
+                  Icons.schedule,
+                  Colors.amber[700]!,
+                  screenWidth,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              Expanded(
+                child: _buildStatCard(
+                  'منتهي الصلاحية',
+                  stats.expiredProducts.toString(),
+                  Icons.dangerous,
+                  Colors.red[800]!,
+                  screenWidth,
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.02),
+              Expanded(
+                child: _buildStatCard(
+                  'مؤرشف',
+                  stats.archivedProducts.toString(),
+                  Icons.archive,
+                  Colors.grey[600]!,
+                  screenWidth,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -318,7 +472,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             product: product,
             onEdit: () => _showAddEditDialog(product),
             onDelete: () => _showDeleteConfirmation(product),
-            onTap: () => _showProductDetails(product),
+            onArchive: () => _showArchiveConfirmation(product),
           );
         },
       ),
@@ -405,13 +559,105 @@ class _ProductsScreenState extends State<ProductsScreen> {
     );
   }
 
-  /// عرض تأكيد الحذف
+  /// عرض تأكيد الأرشفة
+  void _showArchiveConfirmation(ProductModel product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الأرشفة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('هل أنت متأكد من أرشفة المنتج "${product.name}"؟'),
+            const SizedBox(height: 8),
+            const Text(
+              'سيتم نقل المنتج إلى الأرشيف ويمكن استرجاعه لاحقاً.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final success = await context
+                  .read<ProductProvider>()
+                  .archiveProduct(product.id!);
+
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('تم أرشفة المنتج بنجاح'),
+                    backgroundColor: Colors.green,
+                    action: SnackBarAction(
+                      label: 'تراجع',
+                      onPressed: () async {
+                        await context.read<ProductProvider>().restoreProduct(
+                          product.id!,
+                        );
+                      },
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('أرشفة', style: TextStyle(color: Colors.white)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final success = await context
+                  .read<ProductProvider>()
+                  .deleteProduct(product.id!);
+
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم حذف المنتج نهائياً'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text(
+              'حذف نهائي',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// عرض تأكيد الحذف النهائي
   void _showDeleteConfirmation(ProductModel product) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('تأكيد الحذف'),
-        content: Text('هل أنت متأكد من حذف المنتج "${product.name}"؟'),
+        title: const Text('تأكيد الحذف النهائي'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('هل أنت متأكد من حذف المنتج "${product.name}" نهائياً؟'),
+            const SizedBox(height: 8),
+            const Text(
+              '⚠️ تحذير: لا يمكن التراجع عن هذا الإجراء!',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -427,14 +673,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
               if (success && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('تم حذف المنتج بنجاح'),
-                    backgroundColor: Colors.green,
+                    content: Text('تم حذف المنتج نهائياً'),
+                    backgroundColor: Colors.red,
                   ),
                 );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('حذف', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'حذف نهائي',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -446,41 +695,115 @@ class _ProductsScreenState extends State<ProductsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(product.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            _buildDetailRow('الكود', product.code),
-            _buildDetailRow('الكمية', '${product.quantity}'),
-            _buildDetailRow(
-              'سعر الشراء',
-              '${product.buyPrice.toStringAsFixed(2)} ريال',
-            ),
-            _buildDetailRow(
-              'سعر البيع',
-              '${product.salePrice.toStringAsFixed(2)} ريال',
-            ),
-            _buildDetailRow(
-              'الربح للوحدة',
-              '${product.profitPerUnit.toStringAsFixed(2)} ريال',
-            ),
-            _buildDetailRow('الشركة', product.company),
-            _buildDetailRow('التاريخ', product.date),
+            Expanded(child: Text(product.name)),
+            if (product.isLowStock)
+              Icon(Icons.warning, color: Colors.orange, size: 20),
+            if (product.isOutOfStock)
+              Icon(Icons.error, color: Colors.red, size: 20),
+            if (product.isNearExpiry)
+              Icon(Icons.schedule, color: Colors.amber, size: 20),
+            if (product.isExpired)
+              Icon(Icons.dangerous, color: Colors.red[800], size: 20),
           ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetailRow('الكود/الباركود', product.code),
+              _buildDetailRow(
+                'الوصف',
+                product.description.isEmpty ? 'غير محدد' : product.description,
+              ),
+              _buildDetailRow('الكمية', '${product.quantity}'),
+              _buildDetailRow('حد التنبيه', '${product.lowStockThreshold}'),
+              _buildDetailRow(
+                'سعر الشراء',
+                '${product.buyPrice.toStringAsFixed(2)} ريال',
+              ),
+              _buildDetailRow(
+                'سعر البيع',
+                '${product.salePrice.toStringAsFixed(2)} ريال',
+              ),
+              _buildDetailRow(
+                'الربح للوحدة',
+                '${product.profitPerUnit.toStringAsFixed(2)} ريال',
+              ),
+              _buildDetailRow(
+                'إجمالي قيمة المخزون',
+                '${product.totalBuyValue.toStringAsFixed(2)} ريال',
+              ),
+              _buildDetailRow(
+                'إجمالي الربح المتوقع',
+                '${product.totalProfit.toStringAsFixed(2)} ريال',
+              ),
+              _buildDetailRow('الشركة', product.company),
+              _buildDetailRow('تاريخ الإضافة', product.date),
+              if (product.expiryDate != null)
+                _buildDetailRow(
+                  'تاريخ الانتهاء',
+                  '${product.expiryDate!.day}/${product.expiryDate!.month}/${product.expiryDate!.year}',
+                ),
+              if (product.daysUntilExpiry != null)
+                _buildDetailRow(
+                  'الأيام المتبقية',
+                  '${product.daysUntilExpiry} يوم',
+                ),
+              if (product.isArchived)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.archive, color: Colors.grey, size: 16),
+                      SizedBox(width: 4),
+                      Text(
+                        'هذا المنتج مؤرشف',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('إغلاق'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _showAddEditDialog(product);
-            },
-            child: const Text('تعديل'),
-          ),
+          if (product.isArchived)
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final success = await context
+                    .read<ProductProvider>()
+                    .restoreProduct(product.id!);
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم استرجاع المنتج من الأرشيف'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text(
+                'استرجاع',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          if (!product.isArchived)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showAddEditDialog(product);
+              },
+              child: const Text('تعديل'),
+            ),
         ],
       ),
     );
@@ -501,6 +824,154 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
           Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  /// عرض نافذة التنبيهات
+  void _showAlertsDialog(List<ProductAlert> alerts) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.notifications, color: Colors.orange),
+            const SizedBox(width: 8),
+            Text('التنبيهات (${alerts.length})'),
+          ],
+        ),
+        content: alerts.isEmpty
+            ? const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 48),
+                  SizedBox(height: 16),
+                  Text('لا توجد تنبيهات حالياً'),
+                ],
+              )
+            : SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: alerts.length,
+                  itemBuilder: (context, index) {
+                    final alert = alerts[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: Icon(alert.type.icon, color: alert.type.color),
+                        title: Text(
+                          alert.type.displayName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: alert.type.color,
+                          ),
+                        ),
+                        subtitle: Text(alert.message),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.visibility),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _showProductDetails(alert.product);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إغلاق'),
+          ),
+          if (alerts.isNotEmpty)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showInventorySummary();
+              },
+              child: const Text('ملخص المخزون'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// عرض ملخص المخزون
+  void _showInventorySummary() {
+    showDialog(
+      context: context,
+      builder: (context) => Consumer<ProductProvider>(
+        builder: (context, provider, child) {
+          final stats = provider.inventoryStats;
+          if (stats == null) {
+            return const AlertDialog(
+              title: Text('ملخص المخزون'),
+              content: Text('لا توجد بيانات متاحة'),
+            );
+          }
+
+          return AlertDialog(
+            title: const Text('ملخص المخزون'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSummaryRow('عدد المنتجات', '${stats.totalProducts}'),
+                  _buildSummaryRow('مخزون منخفض', '${stats.lowStockProducts}'),
+                  _buildSummaryRow(
+                    'نافد المخزون',
+                    '${stats.outOfStockProducts}',
+                  ),
+                  _buildSummaryRow(
+                    'قريب الانتهاء',
+                    '${stats.nearExpiryProducts}',
+                  ),
+                  _buildSummaryRow(
+                    'منتهي الصلاحية',
+                    '${stats.expiredProducts}',
+                  ),
+                  _buildSummaryRow('مؤرشف', '${stats.archivedProducts}'),
+                  const Divider(),
+                  _buildSummaryRow(
+                    'إجمالي قيمة المخزون',
+                    '${stats.totalInventoryValue.toStringAsFixed(2)} ريال',
+                  ),
+                  _buildSummaryRow(
+                    'إجمالي قيمة البيع',
+                    '${stats.totalSaleValue.toStringAsFixed(2)} ريال',
+                  ),
+                  _buildSummaryRow(
+                    'إجمالي الربح المتوقع',
+                    '${stats.totalProfitPotential.toStringAsFixed(2)} ريال',
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('إغلاق'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// بناء صف الملخص
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),
     );

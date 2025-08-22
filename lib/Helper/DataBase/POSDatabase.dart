@@ -5,7 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// قاعدة بيانات نقطة البيع الشاملة
 class POSDatabase {
-  static const version = 2;
+  static const version = 3;
   static const dbName = 'POS_System.db';
   static Database? _database;
 
@@ -31,6 +31,7 @@ class POSDatabase {
   static const String itemDescription = 'description';
   static const String itemMinStock = 'min_stock';
   static const String itemIsActive = 'is_active';
+  static const String itemIsArchived = 'is_archived';
   static const String itemCreatedAt = 'created_at';
   static const String itemUpdatedAt = 'updated_at';
 
@@ -148,6 +149,7 @@ class POSDatabase {
         $itemDescription TEXT,
         $itemMinStock INTEGER DEFAULT 10,
         $itemIsActive INTEGER DEFAULT 1,
+        $itemIsArchived INTEGER DEFAULT 0,
         $itemCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
         $itemUpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY ($itemCategoryId) REFERENCES $categoriesTable ($categoryId)
@@ -247,6 +249,13 @@ class POSDatabase {
       await db.execute('ALTER TABLE $itemsTable ADD COLUMN $itemImage TEXT');
       await db.execute(
         'ALTER TABLE $itemsTable ADD COLUMN $itemDescription TEXT',
+      );
+    }
+
+    if (oldVersion < 3) {
+      // إضافة حقل الأرشفة
+      await db.execute(
+        'ALTER TABLE $itemsTable ADD COLUMN $itemIsArchived INTEGER DEFAULT 0',
       );
     }
   }

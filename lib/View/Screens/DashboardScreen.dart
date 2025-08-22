@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pos/Helper/Locale/Language.dart';
-import 'package:pos/Helper/Service/Service.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/DashboardProvider.dart';
 import 'package:pos/Model/DashboardModel.dart';
@@ -33,11 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: DeviceUtils.isMobile(context)
           ? null
           : AppBar(
-              // centerTitle: true,
-              // title:  Text(
-              // trans[Language.dashboard] ,
-              //   style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.background),
-              // ),
+              
               backgroundColor: AppColors.accent,
               elevation: 4,
               automaticallyImplyLeading: false,
@@ -88,13 +82,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onRefresh: dashboardProvider.refreshDashboard,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(screenWidth * 0.04),
+              padding: EdgeInsets.all(screenWidth * 0.01),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Welcome Section
                   _buildWelcomeSection(screenWidth, screenHeight),
-                  SizedBox(height: screenHeight * 0.03),
+                  SizedBox(height: screenHeight * 0.02),
 
                   // Statistics Cards
                   _buildStatisticsSection(
@@ -130,7 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildWelcomeSection(double screenWidth, double screenHeight) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(screenWidth * 0.04),
+      padding: EdgeInsets.all(screenWidth * 0.02),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.accent, AppColors.curveTop1],
@@ -193,10 +187,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: screenWidth * 0.03,
-            mainAxisSpacing: screenHeight * 0.02,
-            childAspectRatio: 1.2,
+            crossAxisCount: DeviceUtils.valueDecider(context, onMobile: 1, onTablet: 2, onDesktop: 3),
+            crossAxisSpacing: screenWidth * 0.04,
+            mainAxisSpacing: screenHeight * 0.04,
+            childAspectRatio: 1.3,
           ),
           itemCount: stats.length,
           itemBuilder: (context, index) {
@@ -352,7 +346,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${item.revenue.toStringAsFixed(2)} ريال',
+                            '${item.revenue.toStringAsFixed(2)} دينار',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -468,7 +462,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${transaction.amount.toStringAsFixed(2)} ريال',
+                            '${transaction.amount.toStringAsFixed(2)} دينار',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

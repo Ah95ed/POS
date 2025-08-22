@@ -22,7 +22,10 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
   final _buyPriceController = TextEditingController();
   final _quantityController = TextEditingController();
   final _companyController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _lowStockThresholdController = TextEditingController();
 
+  DateTime? _selectedExpiryDate;
   bool _isLoading = false;
   bool get _isEditing => widget.product != null;
 
@@ -40,6 +43,8 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     _buyPriceController.dispose();
     _quantityController.dispose();
     _companyController.dispose();
+    _descriptionController.dispose();
+    _lowStockThresholdController.dispose();
     super.dispose();
   }
 
@@ -53,6 +58,12 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
       _buyPriceController.text = product.buyPrice.toString();
       _quantityController.text = product.quantity.toString();
       _companyController.text = product.company;
+      _descriptionController.text = product.description;
+      _lowStockThresholdController.text = product.lowStockThreshold.toString();
+      _selectedExpiryDate = product.expiryDate;
+    } else {
+      // القيم الافتراضية للمنتج الجديد
+      _lowStockThresholdController.text = '5';
     }
   }
 
@@ -221,7 +232,7 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
 
           const SizedBox(height: 16),
 
-          // الكمية والشركة في صف واحد
+          // الكمية وحد التنبيه في صف واحد
           Row(
             children: [
               Expanded(
@@ -246,13 +257,49 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildTextField(
-                  controller: _companyController,
-                  label: 'الشركة (اختياري)',
-                  icon: Icons.business,
+                  controller: _lowStockThresholdController,
+                  label: 'حد التنبيه',
+                  icon: Icons.warning,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'حد التنبيه مطلوب';
+                    }
+                    final threshold = int.tryParse(value);
+                    if (threshold == null || threshold < 0) {
+                      return 'حد تنبيه غير صحيح';
+                    }
+                    return null;
+                  },
                 ),
               ),
             ],
           ),
+
+          const SizedBox(height: 16),
+
+          // الشركة
+          _buildTextField(
+            controller: _companyController,
+            label: 'الشركة (اختياري)',
+            icon: Icons.business,
+          ),
+
+          const SizedBox(height: 16),
+
+          // الوصف
+          _buildTextField(
+            controller: _descriptionController,
+            label: 'وصف المنتج (اختياري)',
+            icon: Icons.description,
+            maxLines: 3,
+          ),
+
+          const SizedBox(height: 16),
+
+          // تاريخ انتهاء الصلاحية
+          _buildExpiryDateField(),
 
           const SizedBox(height: 24),
 
@@ -271,12 +318,14 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
     TextInputType? keyboardType,
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
+    int maxLines = 1,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       validator: validator,
+      maxLines: maxLines,
       onChanged: (_) => setState(() {}), // لتحديث معاينة الربح
       decoration: InputDecoration(
         labelText: label,
@@ -286,8 +335,73 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: Colors.blue[700]!),
         ),
+        alignLabelWithHint: maxLines > 1,
       ),
     );
+  }
+
+  /// بناء حقل تاريخ انتهاء الصلاحية
+  Widget _buildExpiryDateField() {
+    return InkWell(
+      onTap: () => _selectExpiryDate(),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey[400]!),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'تاريخ انتهاء الصلاحية (اختياري)',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _selectedExpiryDate != null
+                        ? '${_selectedExpiryDate!.day}/${_selectedExpiryDate!.month}/${_selectedExpiryDate!.year}'
+                        : 'اختر تاريخ انتهاء الصلاحية',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedExpiryDate != null
+                          ? Colors.black87
+                          : Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_selectedExpiryDate != null)
+              IconButton(
+                onPressed: () => setState(() => _selectedExpiryDate = null),
+                icon: const Icon(Icons.clear, color: Colors.red),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// اختيار تاريخ انتهاء الصلاحية
+  Future<void> _selectExpiryDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate:
+          _selectedExpiryDate ?? DateTime.now().add(const Duration(days: 30)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 3650)), // 10 سنوات
+      locale: const Locale('ar'),
+    );
+
+    if (date != null) {
+      setState(() => _selectedExpiryDate = date);
+    }
   }
 
   /// بناء معاينة الربح
@@ -437,6 +551,10 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
         date: _isEditing
             ? widget.product!.date
             : DateTime.now().toString().split(' ')[0],
+        description: _descriptionController.text.trim(),
+        expiryDate: _selectedExpiryDate,
+        lowStockThreshold: int.parse(_lowStockThresholdController.text),
+        isArchived: _isEditing ? widget.product!.isArchived : false,
       );
 
       final provider = context.read<ProductProvider>();

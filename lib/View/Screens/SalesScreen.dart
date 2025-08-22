@@ -9,6 +9,7 @@ import 'package:pos/View/Widgets/ProductSelectionDialog.dart';
 import 'package:pos/View/Widgets/PaymentDialog.dart';
 import 'package:pos/Helper/Service/PrintService.dart';
 import 'package:pos/Helper/Service/RefundService.dart';
+import 'package:smart_sizer/smart_sizer.dart';
 
 /// شاشة نقطة البيع الرئيسية
 class SalesScreen extends StatefulWidget {
@@ -45,7 +46,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: _buildAppBar(),
+      appBar: DeviceUtils.isMobile(context) ? null : buildAppBar(),
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, child) {
           if (saleProvider.isLoading && saleProvider.currentSaleItems.isEmpty) {
@@ -61,13 +62,14 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   /// بناء شريط التطبيق
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget buildAppBar() {
     return AppBar(
+      centerTitle: true,
       title: const Text(
         'نقطة البيع',
         style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
       ),
-            backgroundColor: Theme.of(context).primaryColor,
+      backgroundColor: Theme.of(context).primaryColor,
       elevation: 0,
       automaticallyImplyLeading: false,
       actions: [

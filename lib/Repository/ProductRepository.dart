@@ -71,13 +71,16 @@ class ProductRepository {
     }
   }
 
-  /// الحصول على جميع المنتجات
-  Future<Result<List<ProductModel>>> getAllProducts() async {
+  /// الحصول على جميع المنتجات (بما في ذلك المؤرشفة)
+  Future<Result<List<ProductModel>>> getAllProducts({
+    bool includeArchived = false,
+  }) async {
     try {
       final data = await _database.getAllData();
       final products = data
           .where((item) => item != null)
           .map((item) => ProductModel.fromMap(item!))
+          .where((product) => includeArchived || !product.isArchived)
           .toList();
 
       return Result.success(products);
@@ -243,6 +246,178 @@ class ProductRepository {
       return Result.success(true);
     } catch (e) {
       return Result.error('خطأ في تحديث أسعار الشراء: ${e.toString()}');
+    }
+  }
+
+  /// أرشفة منتج (حذف ناعم)
+  Future<Result<bool>> archiveProduct(int productId) async {
+    try {
+      // الحصول على المنتج الحالي
+      final allProductsResult = await getAllProducts(includeArchived: true);
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final product = allProductsResult.data!
+          .where((p) => p.id == productId)
+          .firstOrNull;
+
+      if (product == null) {
+        return Result.error('لم يتم العثور على المنتج');
+      }
+
+      // أرشفة المنتج
+      final archivedProduct = product.copyWith(isArchived: true);
+      return await updateProduct(archivedProduct);
+    } catch (e) {
+      return Result.error('خطأ في أرشفة المنتج: ${e.toString()}');
+    }
+  }
+
+  /// استرجاع منتج من الأرشيف
+  Future<Result<bool>> restoreProduct(int productId) async {
+    try {
+      // الحصول على المنتج المؤرشف
+      final allProductsResult = await getAllProducts(includeArchived: true);
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final product = allProductsResult.data!
+          .where((p) => p.id == productId && p.isArchived)
+          .firstOrNull;
+
+      if (product == null) {
+        return Result.error('لم يتم العثور على المنتج في الأرشيف');
+      }
+
+      // استرجاع المنتج
+      final restoredProduct = product.copyWith(isArchived: false);
+      return await updateProduct(restoredProduct);
+    } catch (e) {
+      return Result.error('خطأ في استرجاع المنتج: ${e.toString()}');
+    }
+  }
+
+  /// الحصول على المنتجات المؤرشفة
+  Future<Result<List<ProductModel>>> getArchivedProducts() async {
+    try {
+      final allProductsResult = await getAllProducts(includeArchived: true);
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final archivedProducts = allProductsResult.data!
+          .where((product) => product.isArchived)
+          .toList();
+
+      return Result.success(archivedProducts);
+    } catch (e) {
+      return Result.error('خطأ في استرجاع المنتجات المؤرشفة: ${e.toString()}');
+    }
+  }
+
+  /// الحصول على المنتجات قريبة الانتهاء
+  Future<Result<List<ProductModel>>> getNearExpiryProducts() async {
+    try {
+      final allProductsResult = await getAllProducts();
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final nearExpiryProducts = allProductsResult.data!
+          .where((product) => product.isNearExpiry)
+          .toList();
+
+      return Result.success(nearExpiryProducts);
+    } catch (e) {
+      return Result.error(
+        'خطأ في استرجاع المنتجات قريبة الانتهاء: ${e.toString()}',
+      );
+    }
+  }
+
+  /// الحصول على المنتجات منتهية الصلاحية
+  Future<Result<List<ProductModel>>> getExpiredProducts() async {
+    try {
+      final allProductsResult = await getAllProducts();
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final expiredProducts = allProductsResult.data!
+          .where((product) => product.isExpired)
+          .toList();
+
+      return Result.success(expiredProducts);
+    } catch (e) {
+      return Result.error(
+        'خطأ في استرجاع المنتجات منتهية الصلاحية: ${e.toString()}',
+      );
+    }
+  }
+
+  /// البحث في المنتجات بالاسم أو الباركود
+  Future<Result<List<ProductModel>>> searchProducts(String query) async {
+    try {
+      if (query.trim().isEmpty) {
+        return getAllProducts();
+      }
+
+      final searchTerm = query.trim().toLowerCase();
+
+      // البحث بالاسم
+      final nameResults = await searchProductsByName(searchTerm);
+      if (nameResults.isError) {
+        return Result.error(nameResults.error!);
+      }
+
+      // البحث بالكود
+      final codeResult = await getProductByCode(searchTerm);
+      if (codeResult.isError) {
+        return Result.error(codeResult.error!);
+      }
+
+      // دمج النتائج وإزالة التكرار
+      final allResults = <ProductModel>[];
+      allResults.addAll(nameResults.data!);
+
+      if (codeResult.data != null &&
+          !allResults.any((p) => p.id == codeResult.data!.id)) {
+        allResults.add(codeResult.data!);
+      }
+
+      return Result.success(allResults);
+    } catch (e) {
+      return Result.error('خطأ في البحث: ${e.toString()}');
+    }
+  }
+
+  /// تحديث حد التنبيه لمنتج
+  Future<Result<bool>> updateLowStockThreshold(
+    int productId,
+    int newThreshold,
+  ) async {
+    try {
+      // الحصول على المنتج الحالي
+      final allProductsResult = await getAllProducts();
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final product = allProductsResult.data!
+          .where((p) => p.id == productId)
+          .firstOrNull;
+
+      if (product == null) {
+        return Result.error('لم يتم العثور على المنتج');
+      }
+
+      // تحديث حد التنبيه
+      final updatedProduct = product.copyWith(lowStockThreshold: newThreshold);
+      return await updateProduct(updatedProduct);
+    } catch (e) {
+      return Result.error('خطأ في تحديث حد التنبيه: ${e.toString()}');
     }
   }
 }

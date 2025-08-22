@@ -5,7 +5,7 @@ import 'package:pos/Helper/Log/LogApp.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DataBaseSqflite {
-  static const version = 1;
+  static const version = 2; // زيادة رقم الإصدار للتحديث
   static const tableName = 'Items';
   static const tableAccount = 'Account';
   static const dbName = 'Point.db';
@@ -18,6 +18,11 @@ class DataBaseSqflite {
   static const company = 'Company';
   static const date = 'Date';
   static const time = 'Time';
+  // الحقول الجديدة
+  static const expiryDate = 'ExpiryDate';
+  static const description = 'Description';
+  static const isArchived = 'IsArchived';
+  static const lowStockThreshold = 'LowStockThreshold';
 
   static Database? _database;
 
@@ -43,14 +48,35 @@ class DataBaseSqflite {
       version: version,
       onCreate: (db, version) async {
         await db.execute('''CREATE TABLE IF NOT EXISTS $tableName 
-          ($id INTEGER PRIMARY KEY AUTOINCREMENT  ,
-           $name TEXT ,
-            $codeItem TEXT 
-            , $sale TEXT
-             , $buy TEXT
-             , $quantity TEXT 
-             ,$company TEXT
-            ,$date TEXT )''');
+          ($id INTEGER PRIMARY KEY AUTOINCREMENT,
+           $name TEXT,
+           $codeItem TEXT,
+           $sale TEXT,
+           $buy TEXT,
+           $quantity TEXT,
+           $company TEXT,
+           $date TEXT,
+           $expiryDate TEXT,
+           $description TEXT,
+           $isArchived INTEGER DEFAULT 0,
+           $lowStockThreshold INTEGER DEFAULT 5)''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // إضافة الحقول الجديدة للجداول الموجودة
+          await db.execute(
+            'ALTER TABLE $tableName ADD COLUMN $expiryDate TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE $tableName ADD COLUMN $description TEXT',
+          );
+          await db.execute(
+            'ALTER TABLE $tableName ADD COLUMN $isArchived INTEGER DEFAULT 0',
+          );
+          await db.execute(
+            'ALTER TABLE $tableName ADD COLUMN $lowStockThreshold INTEGER DEFAULT 5',
+          );
+        }
       },
     );
   }
@@ -64,14 +90,35 @@ class DataBaseSqflite {
         version: version,
         onCreate: (db, version) async {
           await db.execute('''CREATE TABLE IF NOT EXISTS
-             $tableName ($id INTEGER PRIMARY KEY AUTOINCREMENT  ,
-             $name TEXT ,
-              $codeItem TEXT ,
-               $sale TEXT , 
-               $buy TEXT ,
-                $quantity TEXT ,
-                $company TEXT ,
-            $date TEXT )''');
+             $tableName ($id INTEGER PRIMARY KEY AUTOINCREMENT,
+             $name TEXT,
+             $codeItem TEXT,
+             $sale TEXT,
+             $buy TEXT,
+             $quantity TEXT,
+             $company TEXT,
+             $date TEXT,
+             $expiryDate TEXT,
+             $description TEXT,
+             $isArchived INTEGER DEFAULT 0,
+             $lowStockThreshold INTEGER DEFAULT 5)''');
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            // إضافة الحقول الجديدة للجداول الموجودة
+            await db.execute(
+              'ALTER TABLE $tableName ADD COLUMN $expiryDate TEXT',
+            );
+            await db.execute(
+              'ALTER TABLE $tableName ADD COLUMN $description TEXT',
+            );
+            await db.execute(
+              'ALTER TABLE $tableName ADD COLUMN $isArchived INTEGER DEFAULT 0',
+            );
+            await db.execute(
+              'ALTER TABLE $tableName ADD COLUMN $lowStockThreshold INTEGER DEFAULT 5',
+            );
+          }
         },
       ),
     );

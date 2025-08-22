@@ -3,12 +3,16 @@
 class ProductModel {
   final int? id;
   final String name;
-  final String code;
-  final double salePrice;
-  final double buyPrice;
-  final int quantity;
+  final String code; // باركود / كود SKU
+  final double salePrice; // سعر البيع
+  final double buyPrice; // سعر الشراء
+  final int quantity; // الكمية المتوفرة
   final String company;
   final String date;
+  final DateTime? expiryDate; // تاريخ انتهاء الصلاحية
+  final String description; // وصف المنتج
+  final bool isArchived; // للحذف الناعم (soft delete)
+  final int lowStockThreshold; // حد التنبيه لانخفاض المخزون
 
   const ProductModel({
     this.id,
@@ -19,6 +23,10 @@ class ProductModel {
     required this.quantity,
     required this.company,
     required this.date,
+    this.expiryDate,
+    this.description = '',
+    this.isArchived = false,
+    this.lowStockThreshold = 5,
   });
 
   /// إنشاء منتج من Map (من قاعدة البيانات)
@@ -32,6 +40,14 @@ class ProductModel {
       quantity: _parseInt(map['Quantity']),
       company: map['Company'] as String? ?? '',
       date: map['Date'] as String? ?? '',
+      expiryDate: map['ExpiryDate'] != null
+          ? DateTime.tryParse(map['ExpiryDate'] as String)
+          : null,
+      description: map['Description'] as String? ?? '',
+      isArchived: map['IsArchived'] == 1 || map['IsArchived'] == true,
+      lowStockThreshold: _parseInt(map['LowStockThreshold']) == 0
+          ? 5
+          : _parseInt(map['LowStockThreshold']),
     );
   }
 
@@ -46,6 +62,10 @@ class ProductModel {
       'Quantity': quantity.toString(),
       'Company': company,
       'Date': date,
+      'ExpiryDate': expiryDate?.toIso8601String(),
+      'Description': description,
+      'IsArchived': isArchived ? 1 : 0,
+      'LowStockThreshold': lowStockThreshold,
     };
   }
 
@@ -59,6 +79,10 @@ class ProductModel {
     int? quantity,
     String? company,
     String? date,
+    DateTime? expiryDate,
+    String? description,
+    bool? isArchived,
+    int? lowStockThreshold,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -69,6 +93,10 @@ class ProductModel {
       quantity: quantity ?? this.quantity,
       company: company ?? this.company,
       date: date ?? this.date,
+      expiryDate: expiryDate ?? this.expiryDate,
+      description: description ?? this.description,
+      isArchived: isArchived ?? this.isArchived,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
     );
   }
 
@@ -85,10 +113,31 @@ class ProductModel {
   double get totalProfit => profitPerUnit * quantity;
 
   /// التحقق من انخفاض المخزون
-  bool get isLowStock => quantity < 10;
+  bool get isLowStock => quantity <= lowStockThreshold && quantity > 0;
 
   /// التحقق من نفاد المخزون
   bool get isOutOfStock => quantity <= 0;
+
+  /// التحقق من قرب انتهاء الصلاحية (خلال 30 يوم)
+  bool get isNearExpiry {
+    if (expiryDate == null) return false;
+    final now = DateTime.now();
+    final difference = expiryDate!.difference(now).inDays;
+    return difference <= 30 && difference >= 0;
+  }
+
+  /// التحقق من انتهاء الصلاحية
+  bool get isExpired {
+    if (expiryDate == null) return false;
+    return expiryDate!.isBefore(DateTime.now());
+  }
+
+  /// الحصول على عدد الأيام المتبقية للانتهاء
+  int? get daysUntilExpiry {
+    if (expiryDate == null) return null;
+    final difference = expiryDate!.difference(DateTime.now()).inDays;
+    return difference >= 0 ? difference : 0;
+  }
 
   /// التحقق من صحة البيانات
   bool get isValid {
@@ -99,10 +148,31 @@ class ProductModel {
         quantity >= 0;
   }
 
+  /// التحقق من حالة المنتج النشط
+  bool get isActive => !isArchived;
+
+  /// حساب هامش الربح
+  double get profitMargin => salePrice - buyPrice;
+
+  /// حساب إجمالي قيمة المخزون
+  double get totalStockValue => quantity * buyPrice;
+
+  /// الحصول على الباركود
+  String get barcode => code;
+
+  /// الحصول على الصورة (افتراضية)
+  String? get image => null;
+
+  /// تنسيق تاريخ انتهاء الصلاحية
+  String get formattedExpiryDate {
+    if (expiryDate == null) return 'غير محدد';
+    return '${expiryDate!.day}/${expiryDate!.month}/${expiryDate!.year}';
+  }
+
   /// تحويل إلى نص للعرض
   @override
   String toString() {
-    return 'ProductModel(id: $id, name: $name, code: $code, salePrice: $salePrice, buyPrice: $buyPrice, quantity: $quantity, company: $company, date: $date)';
+    return 'ProductModel(id: $id, name: $name, code: $code, salePrice: $salePrice, buyPrice: $buyPrice, quantity: $quantity, company: $company, date: $date, expiryDate: $expiryDate, description: $description, isArchived: $isArchived, lowStockThreshold: $lowStockThreshold)';
   }
 
   /// مقارنة المنتجات
@@ -117,7 +187,11 @@ class ProductModel {
         other.buyPrice == buyPrice &&
         other.quantity == quantity &&
         other.company == company &&
-        other.date == date;
+        other.date == date &&
+        other.expiryDate == expiryDate &&
+        other.description == description &&
+        other.isArchived == isArchived &&
+        other.lowStockThreshold == lowStockThreshold;
   }
 
   @override
@@ -131,6 +205,10 @@ class ProductModel {
       quantity,
       company,
       date,
+      expiryDate,
+      description,
+      isArchived,
+      lowStockThreshold,
     );
   }
 
@@ -164,37 +242,62 @@ class InventoryStats {
   final int totalProducts;
   final int lowStockProducts;
   final int outOfStockProducts;
+  final int nearExpiryProducts;
+  final int expiredProducts;
+  final int archivedProducts;
   final double totalInventoryValue;
   final double totalProfitPotential;
+  final double totalSaleValue;
 
   const InventoryStats({
     required this.totalProducts,
     required this.lowStockProducts,
     required this.outOfStockProducts,
+    required this.nearExpiryProducts,
+    required this.expiredProducts,
+    required this.archivedProducts,
     required this.totalInventoryValue,
     required this.totalProfitPotential,
+    required this.totalSaleValue,
   });
 
   /// إنشاء إحصائيات من قائمة المنتجات
   factory InventoryStats.fromProducts(List<ProductModel> products) {
     int lowStock = 0;
     int outOfStock = 0;
-    double totalValue = 0.0;
+    int nearExpiry = 0;
+    int expired = 0;
+    int archived = 0;
+    double totalBuyValue = 0.0;
     double totalProfit = 0.0;
+    double totalSaleValue = 0.0;
 
     for (final product in products) {
+      if (product.isArchived) {
+        archived++;
+        continue; // لا نحسب المنتجات المؤرشفة في الإحصائيات الأخرى
+      }
+
       if (product.isLowStock) lowStock++;
       if (product.isOutOfStock) outOfStock++;
-      totalValue += product.totalBuyValue;
+      if (product.isNearExpiry) nearExpiry++;
+      if (product.isExpired) expired++;
+
+      totalBuyValue += product.totalBuyValue;
       totalProfit += product.totalProfit;
+      totalSaleValue += product.totalSaleValue;
     }
 
     return InventoryStats(
-      totalProducts: products.length,
+      totalProducts: products.where((p) => !p.isArchived).length,
       lowStockProducts: lowStock,
       outOfStockProducts: outOfStock,
-      totalInventoryValue: totalValue,
+      nearExpiryProducts: nearExpiry,
+      expiredProducts: expired,
+      archivedProducts: archived,
+      totalInventoryValue: totalBuyValue,
       totalProfitPotential: totalProfit,
+      totalSaleValue: totalSaleValue,
     );
   }
 }
