@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:pos/Controller/DashboardProvider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Controller/SaleProvider.dart';
+import 'package:pos/Controller/SettingsProvider.dart';
 import 'package:pos/Helper/Locale/LanguageController.dart';
 import 'package:pos/Helper/Service/Service.dart';
 import 'package:pos/View/Screens/MainLayout.dart';
@@ -30,6 +31,7 @@ Future<void> main() async {
             ChangeNotifierProvider(create: (_) => DashboardProvider()),
             ChangeNotifierProvider(create: (_) => ProductProvider()),
             ChangeNotifierProvider(create: (_) => SaleProvider()),
+            ChangeNotifierProvider(create: (_) => SettingsProvider()),
           ],
           child: const MyApp(),
           // child: DevicePreview(
@@ -50,25 +52,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LanguageController>(
-      builder: (context, value, child) {
+    return Consumer2<LanguageController, SettingsProvider>(
+      builder: (context, languageController, settingsProvider, child) {
         return SizeBuilder(
           baseSize: Size(360, 650),
           height: context.screenHeight,
           width: context.screenWidth,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            locale: value.language,
-            supportedLocales: value.supportLanguage,
+            locale: languageController.language,
+            supportedLocales: languageController.supportLanguage,
             localizationsDelegates: [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-                        title: 'POS',
-            // theme: AppThemes.lightTheme,
-            // darkTheme: AppThemes.darkTheme,
-            themeMode: ThemeMode.system, // Or ThemeMode.light, ThemeMode.dark
+            title: 'POS',
+            theme: settingsProvider.getTheme(context),
+            themeMode: settingsProvider.isDarkMode
+                ? ThemeMode.dark
+                : ThemeMode.light,
             home: const MainLayout(),
           ),
         );
