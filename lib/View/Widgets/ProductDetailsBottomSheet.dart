@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// BottomSheet تفاصيل المنتج المحسن
 class ProductDetailsBottomSheet extends StatelessWidget {
@@ -133,7 +134,7 @@ class ProductDetailsBottomSheet extends StatelessWidget {
           //     color: Colors.blue[100],
           //     borderRadius: BorderRadius.circular(12),
           //   ),
-          //   child: 
+          //   child:
           //       ? ClipRRect(
           //           borderRadius: BorderRadius.circular(12),
           //           child: Image.network(
@@ -148,7 +149,6 @@ class ProductDetailsBottomSheet extends StatelessWidget {
           //         )
           //       : Icon(Icons.inventory_2, color: Colors.blue[700], size: 30),
           // ),
-
           const SizedBox(width: 16),
 
           // معلومات المنتج
@@ -258,11 +258,17 @@ class ProductDetailsBottomSheet extends StatelessWidget {
   /// بناء معلومات الأسعار
   Widget _buildPriceInfo() {
     return _buildSection('معلومات الأسعار', Icons.attach_money, Colors.green, [
-      _buildInfoRow('سعر الشراء', '${product.buyPrice.toStringAsFixed(2)} ر.س'),
-      _buildInfoRow('سعر البيع', '${product.salePrice.toStringAsFixed(2)} ر.س'),
+      _buildInfoRow(
+        'سعر الشراء',
+        AppConstants.formatCurrency(product.buyPrice),
+      ),
+      _buildInfoRow(
+        'سعر البيع',
+        AppConstants.formatCurrency(product.salePrice),
+      ),
       _buildInfoRow(
         'ربح الوحدة',
-        '${product.profitPerUnit.toStringAsFixed(2)} ر.س',
+        AppConstants.formatCurrency(product.profitPerUnit),
       ),
       _buildInfoRow(
         'هامش الربح',
@@ -270,7 +276,7 @@ class ProductDetailsBottomSheet extends StatelessWidget {
       ),
       _buildInfoRow(
         'الربح الإجمالي',
-        '${(product.profitPerUnit * product.quantity).toStringAsFixed(2)} ر.س',
+        AppConstants.formatCurrency(product.profitPerUnit * product.quantity),
       ),
     ]);
   }
@@ -282,11 +288,11 @@ class ProductDetailsBottomSheet extends StatelessWidget {
       _buildInfoRow('حد التنبيه', '${product.lowStockThreshold} قطعة'),
       _buildInfoRow(
         'قيمة المخزون (شراء)',
-        '${(product.buyPrice * product.quantity).toStringAsFixed(2)} ر.س',
+        AppConstants.formatCurrency(product.buyPrice * product.quantity),
       ),
       _buildInfoRow(
         'قيمة المخزون (بيع)',
-        '${(product.salePrice * product.quantity).toStringAsFixed(2)} ر.س',
+        AppConstants.formatCurrency(product.salePrice * product.quantity),
       ),
       if (product.expiryDate != null)
         _buildInfoRow('تاريخ الانتهاء', product.formattedExpiryDate),
@@ -329,7 +335,7 @@ class ProductDetailsBottomSheet extends StatelessWidget {
           ),
         _buildInfoRow(
           'الإيراد الشهري المتوقع',
-          '${monthlyRevenue.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(monthlyRevenue),
         ),
         _buildInfoRow(
           'معدل الدوران المقدر',

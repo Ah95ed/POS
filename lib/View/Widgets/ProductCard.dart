@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/View/Widgets/ProductDetailsBottomSheet.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// بطاقة عرض المنتج
 class ProductCard extends StatelessWidget {
@@ -180,7 +181,7 @@ class ProductCard extends StatelessWidget {
                     Expanded(
                       child: _buildInfoItem(
                         'سعر البيع',
-                        '${product.salePrice.toStringAsFixed(2)} ر.س',
+                        AppConstants.formatCurrency(product.salePrice),
                         Icons.sell,
                         Colors.green[700]!,
                       ),
@@ -188,7 +189,7 @@ class ProductCard extends StatelessWidget {
                     Expanded(
                       child: _buildInfoItem(
                         'الربح',
-                        '${product.profitPerUnit.toStringAsFixed(2)} ر.س',
+                        AppConstants.formatCurrency(product.profitPerUnit),
                         Icons.trending_up,
                         product.profitPerUnit > 0
                             ? Colors.green[700]!
@@ -511,19 +512,19 @@ class ProductCard extends StatelessWidget {
               ),
               _buildDetailRow(
                 'سعر الشراء',
-                '${product.buyPrice.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.buyPrice),
               ),
               _buildDetailRow(
                 'سعر البيع',
-                '${product.salePrice.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.salePrice),
               ),
               _buildDetailRow(
                 'هامش الربح',
-                '${product.profitPerUnit.toStringAsFixed(2)} ريال (${product.profitMargin.toStringAsFixed(1)}%)',
+                '${AppConstants.formatCurrency(product.profitPerUnit)} (${product.profitMargin.toStringAsFixed(1)}%)',
               ),
               _buildDetailRow(
                 'إجمالي قيمة المخزون',
-                '${product.totalStockValue.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.totalStockValue),
               ),
               _buildDetailRow(
                 'الشركة المصنعة',

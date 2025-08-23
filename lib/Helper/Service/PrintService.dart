@@ -1,4 +1,5 @@
 import 'package:pos/Model/SaleModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// خدمة الطباعة - Print Service
 /// تتعامل مع طباعة الفواتير والإيصالات
@@ -12,7 +13,7 @@ class PrintService {
       // في التطبيق الحقيقي، ستتم الطباعة هنا
       print('طباعة فاتورة: ${sale.invoiceNumber}');
       print('التاريخ: ${sale.date}');
-      print('الإجمالي: ${sale.total} ر.س');
+      print('الإجمالي: ${AppConstants.formatCurrency(sale.total)}');
 
       return true;
     } catch (e) {

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/View/Widgets/ProductCard.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة المنتجات المؤرشفة المحسنة
 class EnhancedArchivedProductsScreen extends StatefulWidget {
@@ -200,7 +201,7 @@ class _EnhancedArchivedProductsScreenState
                   ),
                   _buildStatItem(
                     'القيمة الإجمالية',
-                    '${_calculateTotalValue().toStringAsFixed(0)} ر.س',
+                    AppConstants.formatCurrency(_calculateTotalValue()),
                     Icons.attach_money,
                     Colors.green[700]!,
                   ),

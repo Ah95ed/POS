@@ -1,14 +1,22 @@
 import 'package:pos/Helper/DataBase/POSDatabase.dart';
-import 'package:pos/Model/SaleModel.dart';
 import 'package:pos/Helper/Result.dart';
+import 'package:pos/Model/SaleModel.dart';
+import 'package:sqflite/sqflite.dart';
 
 /// مستودع العملاء - Customer Repository
-/// يحتوي على جميع العمليات المتعلقة بقاعدة البيانات للعملاء
+/// يدير جميع العمليات المتعلقة بقاعدة بيانات العملاء
 class CustomerRepository {
+  static const String _tableName = 'Customers';
+
+  /// الحصول على قاعدة البيانات
+  Future<Database?> get _database async {
+    return await POSDatabase.database;
+  }
+
   /// إضافة عميل جديد
-  Future<Result<int>> addCustomer(CustomerModel customer) async {
+  Future<Result<CustomerModel>> addCustomer(CustomerModel customer) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
@@ -22,21 +30,34 @@ class CustomerRepository {
       if (customer.phone != null && customer.phone!.isNotEmpty) {
         final existingCustomer = await getCustomerByPhone(customer.phone!);
         if (existingCustomer.isSuccess && existingCustomer.data != null) {
-          return Result.error('رقم الهاتف موجود مسبقاً');
+          return Result.error('رقم الهاتف مستخدم من قبل عميل آخر');
         }
       }
 
-      final id = await db.insert(POSDatabase.customersTable, customer.toMap());
-      return Result.success(id);
+      // التحقق من عدم تكرار البريد الإلكتروني
+      if (customer.email != null && customer.email!.isNotEmpty) {
+        final existingCustomer = await getCustomerByEmail(customer.email!);
+        if (existingCustomer.isSuccess && existingCustomer.data != null) {
+          return Result.error('البريد الإلكتروني مستخدم من قبل عميل آخر');
+        }
+      }
+
+      final customerData = customer.toMap();
+      customerData.remove('id'); // إزالة المعرف للإدراج التلقائي
+
+      final id = await db.insert(_tableName, customerData);
+
+      final newCustomer = customer.copyWith(id: id);
+      return Result.success(newCustomer);
     } catch (e) {
       return Result.error('خطأ في إضافة العميل: ${e.toString()}');
     }
   }
 
   /// تحديث عميل موجود
-  Future<Result<bool>> updateCustomer(CustomerModel customer) async {
+  Future<Result<CustomerModel>> updateCustomer(CustomerModel customer) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
@@ -45,21 +66,50 @@ class CustomerRepository {
         return Result.error('معرف العميل مطلوب للتحديث');
       }
 
+      // التحقق من صحة البيانات
       if (!customer.isValid) {
         return Result.error('بيانات العميل غير صحيحة');
       }
 
+      // التحقق من وجود العميل
+      final existingResult = await getCustomerById(customer.id!);
+      if (!existingResult.isSuccess || existingResult.data == null) {
+        return Result.error('العميل غير موجود');
+      }
+
+      // التحقق من عدم تكرار رقم الهاتف مع عملاء آخرين
+      if (customer.phone != null && customer.phone!.isNotEmpty) {
+        final phoneResult = await getCustomerByPhone(customer.phone!);
+        if (phoneResult.isSuccess &&
+            phoneResult.data != null &&
+            phoneResult.data!.id != customer.id) {
+          return Result.error('رقم الهاتف مستخدم من قبل عميل آخر');
+        }
+      }
+
+      // التحقق من عدم تكرار البريد الإلكتروني مع عملاء آخرين
+      if (customer.email != null && customer.email!.isNotEmpty) {
+        final emailResult = await getCustomerByEmail(customer.email!);
+        if (emailResult.isSuccess &&
+            emailResult.data != null &&
+            emailResult.data!.id != customer.id) {
+          return Result.error('البريد الإلكتروني مستخدم من قبل عميل آخر');
+        }
+      }
+
+      final customerData = customer.toMap();
+
       final rowsAffected = await db.update(
-        POSDatabase.customersTable,
-        customer.toMap(),
-        where: '${POSDatabase.customerId} = ?',
+        _tableName,
+        customerData,
+        where: 'id = ?',
         whereArgs: [customer.id],
       );
 
       if (rowsAffected > 0) {
-        return Result.success(true);
+        return Result.success(customer);
       } else {
-        return Result.error('لم يتم العثور على العميل للتحديث');
+        return Result.error('فشل في تحديث العميل');
       }
     } catch (e) {
       return Result.error('خطأ في تحديث العميل: ${e.toString()}');
@@ -69,80 +119,53 @@ class CustomerRepository {
   /// حذف عميل
   Future<Result<bool>> deleteCustomer(int customerId) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      // التحقق من وجود مبيعات للعميل
-      final salesCount = await db.rawQuery(
-        '''
-        SELECT COUNT(*) as count 
-        FROM ${POSDatabase.salesTable} 
-        WHERE ${POSDatabase.saleCustomerId} = ?
-      ''',
-        [customerId],
-      );
-
-      final count = salesCount.first['count'] as int;
-      if (count > 0) {
-        return Result.error('لا يمكن حذف العميل لوجود مبيعات مرتبطة به');
+      // التحقق من وجود العميل
+      final existingResult = await getCustomerById(customerId);
+      if (!existingResult.isSuccess || existingResult.data == null) {
+        return Result.error('العميل غير موجود');
       }
 
+      // TODO: التحقق من وجود مبيعات مرتبطة بالعميل
+      // يمكن إضافة منطق لمنع حذف العملاء الذين لديهم مبيعات
+
       final rowsAffected = await db.delete(
-        POSDatabase.customersTable,
-        where: '${POSDatabase.customerId} = ?',
+        _tableName,
+        where: 'id = ?',
         whereArgs: [customerId],
       );
 
       if (rowsAffected > 0) {
         return Result.success(true);
       } else {
-        return Result.error('لم يتم العثور على العميل للحذف');
+        return Result.error('فشل في حذف العميل');
       }
     } catch (e) {
       return Result.error('خطأ في حذف العميل: ${e.toString()}');
     }
   }
 
-  /// الحصول على جميع العملاء
-  Future<Result<List<CustomerModel>>> getAllCustomers() async {
-    try {
-      final db = await POSDatabase.database;
-      if (db == null) {
-        return Result.error('خطأ في الاتصال بقاعدة البيانات');
-      }
-
-      final data = await db.query(
-        POSDatabase.customersTable,
-        orderBy: '${POSDatabase.customerName} ASC',
-      );
-
-      final customers = data
-          .map((item) => CustomerModel.fromMap(item))
-          .toList();
-      return Result.success(customers);
-    } catch (e) {
-      return Result.error('خطأ في استرجاع العملاء: ${e.toString()}');
-    }
-  }
-
   /// الحصول على عميل بالمعرف
   Future<Result<CustomerModel?>> getCustomerById(int customerId) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      final data = await db.query(
-        POSDatabase.customersTable,
-        where: '${POSDatabase.customerId} = ?',
+      final result = await db.query(
+        _tableName,
+        where: 'id = ?',
         whereArgs: [customerId],
+        limit: 1,
       );
 
-      if (data.isNotEmpty) {
-        final customer = CustomerModel.fromMap(data.first);
+      if (result.isNotEmpty) {
+        final customer = CustomerModel.fromMap(result.first);
         return Result.success(customer);
       } else {
         return Result.success(null);
@@ -152,26 +175,23 @@ class CustomerRepository {
     }
   }
 
-  /// البحث عن عميل برقم الهاتف
+  /// الحصول على عميل برقم الهاتف
   Future<Result<CustomerModel?>> getCustomerByPhone(String phone) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      if (phone.trim().isEmpty) {
-        return Result.error('رقم الهاتف مطلوب');
-      }
-
-      final data = await db.query(
-        POSDatabase.customersTable,
-        where: '${POSDatabase.customerPhone} = ?',
-        whereArgs: [phone.trim()],
+      final result = await db.query(
+        _tableName,
+        where: 'phone = ?',
+        whereArgs: [phone],
+        limit: 1,
       );
 
-      if (data.isNotEmpty) {
-        final customer = CustomerModel.fromMap(data.first);
+      if (result.isNotEmpty) {
+        final customer = CustomerModel.fromMap(result.first);
         return Result.success(customer);
       } else {
         return Result.success(null);
@@ -181,27 +201,83 @@ class CustomerRepository {
     }
   }
 
-  /// البحث في العملاء بالاسم
-  Future<Result<List<CustomerModel>>> searchCustomersByName(String name) async {
+  /// الحصول على عميل بالبريد الإلكتروني
+  Future<Result<CustomerModel?>> getCustomerByEmail(String email) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      if (name.trim().isEmpty) {
-        return getAllCustomers();
-      }
-
-      final data = await db.query(
-        POSDatabase.customersTable,
-        where: '${POSDatabase.customerName} LIKE ?',
-        whereArgs: ['%${name.trim()}%'],
-        orderBy: '${POSDatabase.customerName} ASC',
+      final result = await db.query(
+        _tableName,
+        where: 'email = ?',
+        whereArgs: [email],
+        limit: 1,
       );
 
-      final customers = data
-          .map((item) => CustomerModel.fromMap(item))
+      if (result.isNotEmpty) {
+        final customer = CustomerModel.fromMap(result.first);
+        return Result.success(customer);
+      } else {
+        return Result.success(null);
+      }
+    } catch (e) {
+      return Result.error('خطأ في البحث عن العميل: ${e.toString()}');
+    }
+  }
+
+  /// الحصول على جميع العملاء
+  Future<Result<List<CustomerModel>>> getAllCustomers({
+    int? limit,
+    int? offset,
+    String? orderBy,
+  }) async {
+    try {
+      final db = await _database;
+      if (db == null) {
+        return Result.error('خطأ في الاتصال بقاعدة البيانات');
+      }
+
+      final result = await db.query(
+        _tableName,
+        orderBy: orderBy ?? 'created_at DESC',
+        limit: limit,
+        offset: offset,
+      );
+
+      final customers = result
+          .map((map) => CustomerModel.fromMap(map))
+          .toList();
+      return Result.success(customers);
+    } catch (e) {
+      return Result.error('خطأ في جلب العملاء: ${e.toString()}');
+    }
+  }
+
+  /// البحث في العملاء
+  Future<Result<List<CustomerModel>>> searchCustomers(
+    String query, {
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final db = await _database;
+      if (db == null) {
+        return Result.error('خطأ في الاتصال بقاعدة البيانات');
+      }
+
+      final result = await db.query(
+        _tableName,
+        where: 'name LIKE ? OR phone LIKE ? OR email LIKE ?',
+        whereArgs: ['%$query%', '%$query%', '%$query%'],
+        orderBy: 'name ASC',
+        limit: limit,
+        offset: offset,
+      );
+
+      final customers = result
+          .map((map) => CustomerModel.fromMap(map))
           .toList();
       return Result.success(customers);
     } catch (e) {
@@ -210,71 +286,108 @@ class CustomerRepository {
   }
 
   /// الحصول على العملاء المميزين
-  Future<Result<List<CustomerModel>>> getVipCustomers() async {
+  Future<Result<List<CustomerModel>>> getVipCustomers({
+    int? limit,
+    int? offset,
+  }) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      final data = await db.query(
-        POSDatabase.customersTable,
-        where: '${POSDatabase.customerIsVip} = ?',
+      final result = await db.query(
+        _tableName,
+        where: 'is_vip = ?',
         whereArgs: [1],
-        orderBy: '${POSDatabase.customerTotalPurchases} DESC',
+        orderBy: 'total_purchases DESC',
+        limit: limit,
+        offset: offset,
       );
 
-      final customers = data
-          .map((item) => CustomerModel.fromMap(item))
+      final customers = result
+          .map((map) => CustomerModel.fromMap(map))
           .toList();
       return Result.success(customers);
     } catch (e) {
-      return Result.error('خطأ في استرجاع العملاء المميزين: ${e.toString()}');
+      return Result.error('خطأ في جلب العملاء المميزين: ${e.toString()}');
     }
   }
 
-  /// الحصول على أفضل العملاء (حسب المشتريات)
-  Future<Result<List<CustomerModel>>> getTopCustomers({int limit = 10}) async {
+  /// الحصول على أفضل العملاء حسب المشتريات
+  Future<Result<List<CustomerModel>>> getTopCustomers({
+    int limit = 10,
+    int? offset,
+  }) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      final data = await db.query(
-        POSDatabase.customersTable,
-        orderBy: '${POSDatabase.customerTotalPurchases} DESC',
+      final result = await db.query(
+        _tableName,
+        orderBy: 'total_purchases DESC',
         limit: limit,
+        offset: offset,
       );
 
-      final customers = data
-          .map((item) => CustomerModel.fromMap(item))
+      final customers = result
+          .map((map) => CustomerModel.fromMap(map))
           .toList();
       return Result.success(customers);
     } catch (e) {
-      return Result.error('خطأ في استرجاع أفضل العملاء: ${e.toString()}');
+      return Result.error('خطأ في جلب أفضل العملاء: ${e.toString()}');
     }
   }
 
-  /// تحديث نقاط العميل
-  Future<Result<bool>> updateCustomerPoints(int customerId, int points) async {
+  /// تحديث حالة العميل المميز
+  Future<Result<bool>> updateCustomerVipStatus(
+    int customerId,
+    bool isVip,
+  ) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
       final rowsAffected = await db.update(
-        POSDatabase.customersTable,
-        {POSDatabase.customerPoints: points},
-        where: '${POSDatabase.customerId} = ?',
+        _tableName,
+        {'is_vip': isVip ? 1 : 0},
+        where: 'id = ?',
         whereArgs: [customerId],
       );
 
       if (rowsAffected > 0) {
         return Result.success(true);
       } else {
-        return Result.error('لم يتم العثور على العميل');
+        return Result.error('فشل في تحديث حالة العميل المميز');
+      }
+    } catch (e) {
+      return Result.error('خطأ في تحديث حالة العميل المميز: ${e.toString()}');
+    }
+  }
+
+  /// تحديث نقاط العميل
+  Future<Result<bool>> updateCustomerPoints(int customerId, int points) async {
+    try {
+      final db = await _database;
+      if (db == null) {
+        return Result.error('خطأ في الاتصال بقاعدة البيانات');
+      }
+
+      final rowsAffected = await db.update(
+        _tableName,
+        {'points': points},
+        where: 'id = ?',
+        whereArgs: [customerId],
+      );
+
+      if (rowsAffected > 0) {
+        return Result.success(true);
+      } else {
+        return Result.error('فشل في تحديث نقاط العميل');
       }
     } catch (e) {
       return Result.error('خطأ في تحديث نقاط العميل: ${e.toString()}');
@@ -287,22 +400,22 @@ class CustomerRepository {
     double totalPurchases,
   ) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
       final rowsAffected = await db.update(
-        POSDatabase.customersTable,
-        {POSDatabase.customerTotalPurchases: totalPurchases},
-        where: '${POSDatabase.customerId} = ?',
+        _tableName,
+        {'total_purchases': totalPurchases},
+        where: 'id = ?',
         whereArgs: [customerId],
       );
 
       if (rowsAffected > 0) {
         return Result.success(true);
       } else {
-        return Result.error('لم يتم العثور على العميل');
+        return Result.error('فشل في تحديث إجمالي مشتريات العميل');
       }
     } catch (e) {
       return Result.error(
@@ -311,65 +424,126 @@ class CustomerRepository {
     }
   }
 
-  /// تحديث حالة العميل المميز
-  Future<Result<bool>> updateCustomerVipStatus(
+  /// إضافة نقاط للعميل
+  Future<Result<bool>> addPointsToCustomer(
     int customerId,
-    bool isVip,
+    int pointsToAdd,
   ) async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
+      // الحصول على النقاط الحالية
+      final customerResult = await getCustomerById(customerId);
+      if (!customerResult.isSuccess || customerResult.data == null) {
+        return Result.error('العميل غير موجود');
+      }
+
+      final currentPoints = customerResult.data!.points;
+      final newPoints = currentPoints + pointsToAdd;
+
       final rowsAffected = await db.update(
-        POSDatabase.customersTable,
-        {POSDatabase.customerIsVip: isVip ? 1 : 0},
-        where: '${POSDatabase.customerId} = ?',
+        _tableName,
+        {'points': newPoints},
+        where: 'id = ?',
         whereArgs: [customerId],
       );
 
       if (rowsAffected > 0) {
         return Result.success(true);
       } else {
-        return Result.error('لم يتم العثور على العميل');
+        return Result.error('فشل في إضافة النقاط');
       }
     } catch (e) {
-      return Result.error('خطأ في تحديث حالة العميل المميز: ${e.toString()}');
+      return Result.error('خطأ في إضافة النقاط: ${e.toString()}');
     }
   }
 
   /// الحصول على إحصائيات العملاء
   Future<Result<Map<String, dynamic>>> getCustomersStats() async {
     try {
-      final db = await POSDatabase.database;
+      final db = await _database;
       if (db == null) {
         return Result.error('خطأ في الاتصال بقاعدة البيانات');
       }
 
-      final result = await db.rawQuery('''
-        SELECT 
-          COUNT(*) as total_customers,
-          COUNT(CASE WHEN ${POSDatabase.customerIsVip} = 1 THEN 1 END) as vip_customers,
-          AVG(${POSDatabase.customerTotalPurchases}) as avg_purchases,
-          SUM(${POSDatabase.customerTotalPurchases}) as total_revenue,
-          SUM(${POSDatabase.customerPoints}) as total_points
-        FROM ${POSDatabase.customersTable}
-      ''');
+      // إجمالي العملاء
+      final totalResult = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM $_tableName',
+      );
+      final totalCustomers = totalResult.first['count'] as int;
 
-      if (result.isNotEmpty) {
-        return Result.success(result.first);
-      } else {
-        return Result.success({
-          'total_customers': 0,
-          'vip_customers': 0,
-          'avg_purchases': 0.0,
-          'total_revenue': 0.0,
-          'total_points': 0,
-        });
-      }
+      // العملاء المميزون
+      final vipResult = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM $_tableName WHERE is_vip = 1',
+      );
+      final vipCustomers = vipResult.first['count'] as int;
+
+      // إجمالي الإيرادات من العملاء
+      final revenueResult = await db.rawQuery(
+        'SELECT SUM(total_purchases) as total FROM $_tableName',
+      );
+      final totalRevenue = (revenueResult.first['total'] as double?) ?? 0.0;
+
+      // متوسط المشتريات
+      final avgResult = await db.rawQuery(
+        'SELECT AVG(total_purchases) as avg FROM $_tableName WHERE total_purchases > 0',
+      );
+      final avgPurchases = (avgResult.first['avg'] as double?) ?? 0.0;
+
+      // إجمالي النقاط
+      final pointsResult = await db.rawQuery(
+        'SELECT SUM(points) as total FROM $_tableName',
+      );
+      final totalPoints = (pointsResult.first['total'] as int?) ?? 0;
+
+      final stats = {
+        'total_customers': totalCustomers,
+        'vip_customers': vipCustomers,
+        'total_revenue': totalRevenue,
+        'avg_purchases': avgPurchases,
+        'total_points': totalPoints,
+      };
+
+      return Result.success(stats);
     } catch (e) {
-      return Result.error('خطأ في حساب إحصائيات العملاء: ${e.toString()}');
+      return Result.error('خطأ في جلب إحصائيات العملاء: ${e.toString()}');
+    }
+  }
+
+  /// عدد العملاء
+  Future<Result<int>> getCustomersCount() async {
+    try {
+      final db = await _database;
+      if (db == null) {
+        return Result.error('خطأ في الاتصال بقاعدة البيانات');
+      }
+
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM $_tableName',
+      );
+      final count = result.first['count'] as int;
+
+      return Result.success(count);
+    } catch (e) {
+      return Result.error('خطأ في عد العملاء: ${e.toString()}');
+    }
+  }
+
+  /// حذف جميع العملاء (للاختبار فقط)
+  Future<Result<bool>> deleteAllCustomers() async {
+    try {
+      final db = await _database;
+      if (db == null) {
+        return Result.error('خطأ في الاتصال بقاعدة البيانات');
+      }
+
+      await db.delete(_tableName);
+      return Result.success(true);
+    } catch (e) {
+      return Result.error('خطأ في حذف جميع العملاء: ${e.toString()}');
     }
   }
 }

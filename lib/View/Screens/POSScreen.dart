@@ -5,6 +5,7 @@ import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/View/Widgets/ProductGridWidget.dart';
 import 'package:pos/View/Widgets/SaleItemWidget.dart';
 import 'package:pos/View/Widgets/PaymentDialog.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة نقطة البيع الرئيسية
 class POSScreen extends StatefulWidget {
@@ -465,7 +466,7 @@ class _POSScreenState extends State<POSScreen> {
             ),
           ),
           Text(
-            '${amount.toStringAsFixed(2)} ر.س',
+            AppConstants.formatCurrency(amount),
             style: TextStyle(
               fontSize: isTotal ? 16 : 14,
               fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
@@ -531,7 +532,7 @@ class _POSScreenState extends State<POSScreen> {
               label: Text(
                 provider.isLoading
                     ? 'جاري المعالجة...'
-                    : 'دفع (${provider.total.toStringAsFixed(2)} ر.س)',
+                    : 'دفع (${AppConstants.formatCurrency(provider.total)})',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -577,7 +578,7 @@ class _POSScreenState extends State<POSScreen> {
                   style: const TextStyle(fontSize: 12, color: Colors.grey),
                 ),
                 Text(
-                  '${provider.total.toStringAsFixed(2)} ر.س',
+                  AppConstants.formatCurrency(provider.total),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

@@ -10,6 +10,7 @@ import 'package:pos/View/Widgets/PaymentDialog.dart';
 import 'package:pos/Helper/Service/PrintService.dart';
 import 'package:pos/Helper/Service/RefundService.dart';
 import 'package:smart_sizer/smart_sizer.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة نقطة البيع الرئيسية
 class SalesScreen extends StatefulWidget {
@@ -206,7 +207,7 @@ class _SalesScreenState extends State<SalesScreen> {
           // شريط البحث
           _buildSearchBar(provider, width),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // قائمة المنتجات
           Expanded(child: _buildProductGrid(provider, width)),
@@ -326,7 +327,7 @@ class _SalesScreenState extends State<SalesScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '${product.salePrice.toStringAsFixed(2)} ر.س',
+                    AppConstants.formatCurrency(product.salePrice),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -509,33 +510,33 @@ class _SalesScreenState extends State<SalesScreen> {
         children: [
           _buildSummaryRow(
             'المجموع الفرعي:',
-            '${provider.subtotal.toStringAsFixed(2)} ر.س',
+            AppConstants.formatCurrency(provider.subtotal),
           ),
           if (provider.discount > 0)
             _buildSummaryRow(
               'الخصم:',
-              '-${provider.discount.toStringAsFixed(2)} ر.س',
+              '-${AppConstants.formatCurrency(provider.discount)}',
               color: Colors.red[700],
             ),
           _buildSummaryRow(
             'الضريبة (${provider.taxRate.toStringAsFixed(0)}%):',
-            '${provider.taxAmount.toStringAsFixed(2)} ر.س',
+            AppConstants.formatCurrency(provider.taxAmount),
           ),
           const Divider(thickness: 2),
           _buildSummaryRow(
             'الإجمالي:',
-            '${provider.total.toStringAsFixed(2)} ر.س',
+            AppConstants.formatCurrency(provider.total),
             isTotal: true,
           ),
           if (provider.paidAmount > 0) ...[
             _buildSummaryRow(
               'المدفوع:',
-              '${provider.paidAmount.toStringAsFixed(2)} ر.س',
+              AppConstants.formatCurrency(provider.paidAmount),
             ),
             if (provider.changeAmount > 0)
               _buildSummaryRow(
                 'الباقي:',
-                '${provider.changeAmount.toStringAsFixed(2)} ر.س',
+                AppConstants.formatCurrency(provider.changeAmount),
                 color: Colors.green[700],
               ),
           ],
@@ -629,7 +630,7 @@ class _SalesScreenState extends State<SalesScreen> {
                   : null,
               icon: const Icon(Icons.payment, size: 24),
               label: Text(
-                'دفع (${provider.total.toStringAsFixed(2)} ر.س)',
+                'دفع (${AppConstants.formatCurrency(provider.total)})',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -960,7 +961,7 @@ class _SalesScreenState extends State<SalesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('التاريخ: ${_formatDate(sale.date)}'),
-            Text('الإجمالي: ${sale.total.toStringAsFixed(2)} ر.س'),
+            Text('الإجمالي: ${AppConstants.formatCurrency(sale.total)}'),
             if (sale.customerName != null) Text('العميل: ${sale.customerName}'),
             const SizedBox(height: 16),
             const Text('نوع الإرجاع:'),
@@ -1142,7 +1143,9 @@ class _DiscountDialogState extends State<_DiscountDialog> {
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
             ],
             decoration: InputDecoration(
-              labelText: _isPercentage ? 'نسبة الخصم (%)' : 'مبلغ الخصم (ر.س)',
+              labelText: _isPercentage
+                  ? 'نسبة الخصم (%)'
+                  : 'مبلغ الخصم (${AppConstants.currencyName})',
               border: const OutlineInputBorder(),
             ),
           ),

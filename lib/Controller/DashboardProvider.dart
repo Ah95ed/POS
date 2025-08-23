@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pos/Helper/DataBase/DataBaseSqflite.dart';
 import 'package:pos/Helper/Log/LogApp.dart';
 import 'package:pos/Model/DashboardModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 class DashboardProvider extends ChangeNotifier {
   final DataBaseSqflite _database = DataBaseSqflite();
@@ -209,21 +210,21 @@ class DashboardProvider extends ChangeNotifier {
       ),
       DashboardStats(
         title: 'قيمة المبيعات',
-        value: _dashboardData.totalSalesValue.toStringAsFixed(2),
+        value: AppConstants.formatCurrency(_dashboardData.totalSalesValue),
         subtitle: 'دينار',
         icon: Icons.trending_up,
         color: Colors.green,
       ),
       DashboardStats(
         title: 'قيمة المشتريات',
-        value: _dashboardData.totalPurchaseValue.toStringAsFixed(2),
+        value: AppConstants.formatCurrency(_dashboardData.totalPurchaseValue),
         subtitle: 'دينار',
         icon: Icons.shopping_cart,
         color: Colors.orange,
       ),
       DashboardStats(
         title: 'صافي الربح',
-        value: _dashboardData.totalProfit.toStringAsFixed(2),
+        value: AppConstants.formatCurrency(_dashboardData.totalProfit),
         subtitle: 'دينار',
         icon: Icons.account_balance_wallet,
         color: _dashboardData.totalProfit >= 0 ? Colors.green : Colors.red,

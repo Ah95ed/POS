@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// نافذة اختيار المنتجات
 class ProductSelectionDialog extends StatefulWidget {
@@ -41,7 +42,7 @@ class _ProductSelectionDialogState extends State<ProductSelectionDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
+      child: SizedBox(
         width: dialogWidth,
         height: dialogHeight,
         child: Column(
@@ -217,7 +218,7 @@ class _ProductSelectionDialogState extends State<ProductSelectionDialog> {
                         style: TextStyle(fontSize: 10, color: Colors.grey[600]),
                       ),
                       Text(
-                        '${product.salePrice.toStringAsFixed(2)} ر.س',
+                        AppConstants.formatCurrency(product.salePrice),
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,

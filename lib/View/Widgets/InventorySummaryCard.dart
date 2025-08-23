@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// بطاقة ملخص المخزون
 class InventorySummaryCard extends StatelessWidget {
@@ -76,7 +77,7 @@ class InventorySummaryCard extends StatelessWidget {
                   Expanded(
                     child: _buildSummaryItem(
                       'قيمة الشراء',
-                      '${summary.totalPurchaseValue.toStringAsFixed(0)} ر.س',
+                      AppConstants.formatCurrency(summary.totalPurchaseValue),
                       Icons.shopping_cart,
                       Colors.white,
                     ),
@@ -84,7 +85,7 @@ class InventorySummaryCard extends StatelessWidget {
                   Expanded(
                     child: _buildSummaryItem(
                       'قيمة البيع',
-                      '${summary.totalSaleValue.toStringAsFixed(0)} ر.س',
+                      AppConstants.formatCurrency(summary.totalSaleValue),
                       Icons.sell,
                       Colors.white,
                     ),
@@ -119,7 +120,7 @@ class InventorySummaryCard extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '${summary.totalProfit.toStringAsFixed(0)} ر.س',
+                      AppConstants.formatCurrency(summary.totalProfit),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

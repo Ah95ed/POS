@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// نافذة إضافة/تعديل المنتج
 class AddEditProductDialog extends StatefulWidget {
@@ -443,14 +444,14 @@ class _AddEditProductDialogState extends State<AddEditProductDialog> {
               Expanded(
                 child: _buildProfitItem(
                   'الربح للوحدة',
-                  '${profitPerUnit.toStringAsFixed(2)} ر.س',
+                  AppConstants.formatCurrency(profitPerUnit),
                   profitPerUnit > 0 ? Colors.green : Colors.red,
                 ),
               ),
               Expanded(
                 child: _buildProfitItem(
                   'إجمالي الربح',
-                  '${totalProfit.toStringAsFixed(2)} ر.س',
+                  AppConstants.formatCurrency(totalProfit),
                   totalProfit > 0 ? Colors.green : Colors.red,
                 ),
               ),

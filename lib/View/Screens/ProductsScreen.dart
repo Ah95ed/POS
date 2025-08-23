@@ -13,6 +13,7 @@ import 'package:pos/View/Widgets/AddEditProductDialog.dart';
 import 'package:pos/View/Widgets/EnhancedInventorySummaryCard.dart';
 import 'package:pos/View/Widgets/InventoryAlertsWidget.dart';
 import 'package:pos/View/Widgets/QuickFiltersWidget.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 import 'package:smart_sizer/smart_sizer.dart';
 
 /// شاشة إدارة المنتجات
@@ -37,6 +38,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   @override
+
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
@@ -45,7 +47,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: DeviceUtils.isMobile(context) ? null : _buildAppBar(),
@@ -63,7 +64,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             children: [
               // شريط البحث والفلاتر
               _buildSearchAndFilters(productProvider, context.screenWidth),
-          
+
               // الفلاتر السريعة
               QuickFiltersWidget(
                 selectedFilter: _selectedFilter,
@@ -74,10 +75,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   _applyFilter(productProvider, filter);
                 },
               ),
-          
+
               // تنبيهات المخزون
-              InventoryAlertsWidget(products: productProvider.products),
-          
+              // InventoryAlertsWidget(products: productProvider.products),
+
               // ملخص المخزون
               EnhancedInventorySummaryCard(
                 products: productProvider.products,
@@ -88,9 +89,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   ),
                 ),
               ),
-          
+
               // قائمة المنتجات
               Expanded(
+                flex: 3,
                 child: _buildProductsList(productProvider, context.screenWidth),
               ),
             ],
@@ -256,7 +258,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   /// بناء شريط البحث والفلاتر
   Widget _buildSearchAndFilters(ProductProvider provider, double screenWidth) {
     return Container(
-      padding: EdgeInsets.all(context.getMinSize(4)),
+      padding: EdgeInsets.all(context.getMinSize(2)),
       color: Colors.white,
       child: Column(
         children: [
@@ -276,7 +278,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                     )
                   : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.grey[300]!),
               ),
               focusedBorder: OutlineInputBorder(
@@ -289,7 +291,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
             },
           ),
 
-          SizedBox(height: context.getHeight(8)),
+          SizedBox(height: context.getHeight(4)),
 
           // معلومات الترتيب
           Row(
@@ -722,23 +724,23 @@ class _ProductsScreenState extends State<ProductsScreen> {
               _buildDetailRow('حد التنبيه', '${product.lowStockThreshold}'),
               _buildDetailRow(
                 'سعر الشراء',
-                '${product.buyPrice.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.buyPrice),
               ),
               _buildDetailRow(
                 'سعر البيع',
-                '${product.salePrice.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.salePrice),
               ),
               _buildDetailRow(
                 'الربح للوحدة',
-                '${product.profitPerUnit.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.profitPerUnit),
               ),
               _buildDetailRow(
                 'إجمالي قيمة المخزون',
-                '${product.totalBuyValue.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.totalBuyValue),
               ),
               _buildDetailRow(
                 'إجمالي الربح المتوقع',
-                '${product.totalProfit.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.totalProfit),
               ),
               _buildDetailRow('الشركة', product.company),
               _buildDetailRow('تاريخ الإضافة', product.date),
@@ -938,15 +940,15 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   const Divider(),
                   _buildSummaryRow(
                     'إجمالي قيمة المخزون',
-                    '${stats.totalInventoryValue.toStringAsFixed(2)} ريال',
+                    AppConstants.formatCurrency(stats.totalInventoryValue),
                   ),
                   _buildSummaryRow(
                     'إجمالي قيمة البيع',
-                    '${stats.totalSaleValue.toStringAsFixed(2)} ريال',
+                    AppConstants.formatCurrency(stats.totalSaleValue),
                   ),
                   _buildSummaryRow(
                     'إجمالي الربح المتوقع',
-                    '${stats.totalProfitPotential.toStringAsFixed(2)} ريال',
+                    AppConstants.formatCurrency(stats.totalProfitPotential),
                   ),
                 ],
               ),

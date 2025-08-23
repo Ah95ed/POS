@@ -3,6 +3,7 @@ import 'package:pos/View/style/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة التنبيهات
 class AlertsScreen extends StatefulWidget {
@@ -493,11 +494,11 @@ class _AlertsScreenState extends State<AlertsScreen>
               _buildDetailRow('حد التنبيه', '${product.lowStockThreshold}'),
               _buildDetailRow(
                 'سعر الشراء',
-                '${product.buyPrice.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.buyPrice),
               ),
               _buildDetailRow(
                 'سعر البيع',
-                '${product.salePrice.toStringAsFixed(2)} ريال',
+                AppConstants.formatCurrency(product.salePrice),
               ),
               _buildDetailRow('الشركة', product.company),
               _buildDetailRow('تاريخ الإضافة', product.date),

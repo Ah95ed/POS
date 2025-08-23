@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pos/Model/SaleModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// عنصر المنتج في الفاتورة
 class SaleItemWidget extends StatelessWidget {
@@ -72,7 +73,7 @@ class SaleItemWidget extends StatelessWidget {
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       Text(
-                        '${item.unitPrice.toStringAsFixed(2)} ر.س',
+                        AppConstants.formatCurrency(item.unitPrice),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -106,7 +107,7 @@ class SaleItemWidget extends StatelessWidget {
                         style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       Text(
-                        '${item.total.toStringAsFixed(2)} ر.س',
+                        AppConstants.formatCurrency(item.total),
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -138,7 +139,7 @@ class SaleItemWidget extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'خصم: ${item.discount.toStringAsFixed(2)} ر.س',
+                      'خصم: ${AppConstants.formatCurrency(item.discount)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.orange[700],
@@ -238,7 +239,7 @@ class SaleItemWidget extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'السعر الأصلي: ${(item.unitPrice * item.quantity).toStringAsFixed(2)} ر.س',
+              'السعر الأصلي: ${AppConstants.formatCurrency(item.unitPrice * item.quantity)}',
               style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
@@ -249,7 +250,7 @@ class SaleItemWidget extends StatelessWidget {
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
               ],
               decoration: const InputDecoration(
-                labelText: 'قيمة الخصم (ر.س)',
+                labelText: 'قيمة الخصم (${AppConstants.currencyName})',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.local_offer),
               ),

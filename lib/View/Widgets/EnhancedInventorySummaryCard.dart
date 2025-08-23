@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:smart_sizer/smart_sizer.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// بطاقة ملخص المخزون المحسنة
 class EnhancedInventorySummaryCard extends StatelessWidget {
@@ -18,8 +19,8 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
     final summary = _calculateSummary();
 
     return Card(
-      elevation: 4,
-      margin:  EdgeInsets.all(context.getMinSize(8)),
+      elevation: 8,
+      margin: EdgeInsets.all(context.getMinSize(1)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
@@ -34,7 +35,7 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding:  EdgeInsets.all(context.getMinSize(8)),
+            padding: EdgeInsets.all(context.getMinSize(4)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -42,7 +43,7 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding:  EdgeInsets.all(context.getMinSize(4)),
+                      padding: EdgeInsets.all(context.getMinSize(2)),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
@@ -53,12 +54,12 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                         size: 24,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    //  SizedBox(width:context.getWidth(4)),
+                    Expanded(
                       child: Text(
                         'ملخص المخزون',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: context.getFontSize(8),
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -73,7 +74,7 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                SizedBox(height: context.getHeight(4)),
 
                 // الإحصائيات الرئيسية
                 Row(
@@ -95,28 +96,28 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: context.getHeight(4)),
 
                 Row(
                   children: [
                     Expanded(
                       child: _buildSummaryItem(
                         'قيمة الشراء',
-                        '${summary.totalPurchaseValue.toStringAsFixed(0)} ر.س',
+                        AppConstants.formatCurrency(summary.totalPurchaseValue),
                         Icons.shopping_cart,
                       ),
                     ),
                     Expanded(
                       child: _buildSummaryItem(
                         'قيمة البيع',
-                        '${summary.totalSaleValue.toStringAsFixed(0)} ر.س',
+                        AppConstants.formatCurrency(summary.totalSaleValue),
                         Icons.sell,
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: context.getHeight(4)),
 
                 // الربح المتوقع
                 Container(
@@ -132,7 +133,7 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                         color: Colors.green[300],
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +146,9 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${summary.expectedProfit.toStringAsFixed(2)} ر.س',
+                              AppConstants.formatCurrency(
+                                summary.expectedProfit,
+                              ),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -177,7 +180,7 @@ class EnhancedInventorySummaryCard extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: context.getHeight(4)),
 
                 // مؤشرات التنبيه
                 _buildAlertIndicators(summary),

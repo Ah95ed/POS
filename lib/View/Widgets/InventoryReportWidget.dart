@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// widget تقرير المخزون المفصل
 class InventoryReportWidget extends StatelessWidget {
@@ -111,13 +112,13 @@ class InventoryReportWidget extends StatelessWidget {
         ),
         _buildSummaryCard(
           'قيمة الشراء',
-          '${report.totalPurchaseValue.toStringAsFixed(0)} ر.س',
+          AppConstants.formatCurrency(report.totalPurchaseValue),
           Icons.shopping_cart,
           Colors.orange,
         ),
         _buildSummaryCard(
           'قيمة البيع',
-          '${report.totalSaleValue.toStringAsFixed(0)} ر.س',
+          AppConstants.formatCurrency(report.totalSaleValue),
           Icons.sell,
           Colors.purple,
         ),
@@ -147,7 +148,7 @@ class InventoryReportWidget extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${report.totalProfit.toStringAsFixed(2)} ر.س',
+                    AppConstants.formatCurrency(report.totalProfit),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -262,7 +263,7 @@ class InventoryReportWidget extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${company.productCount} منتج • ${company.totalValue.toStringAsFixed(0)} ر.س',
+                      '${company.productCount} منتج • ${AppConstants.formatCurrency(company.totalValue)}',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
@@ -296,19 +297,19 @@ class InventoryReportWidget extends StatelessWidget {
       _buildSummaryGrid([
         _buildSummaryCard(
           'أعلى سعر بيع',
-          '${report.highestSalePrice.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(report.highestSalePrice),
           Icons.arrow_upward,
           Colors.green,
         ),
         _buildSummaryCard(
           'أقل سعر بيع',
-          '${report.lowestSalePrice.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(report.lowestSalePrice),
           Icons.arrow_downward,
           Colors.red,
         ),
         _buildSummaryCard(
           'متوسط سعر البيع',
-          '${report.averageSalePrice.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(report.averageSalePrice),
           Icons.trending_flat,
           Colors.blue,
         ),
@@ -356,7 +357,7 @@ class InventoryReportWidget extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      'الكمية: ${product.quantity} • السعر: ${product.salePrice.toStringAsFixed(2)} ر.س',
+                      'الكمية: ${product.quantity} • السعر: ${AppConstants.formatCurrency(product.salePrice)}',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
@@ -366,7 +367,7 @@ class InventoryReportWidget extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${product.profitPerUnit.toStringAsFixed(2)} ر.س',
+                    AppConstants.formatCurrency(product.profitPerUnit),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.green[700],

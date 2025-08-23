@@ -4,6 +4,7 @@ import 'package:pos/Controller/DashboardProvider.dart';
 import 'package:pos/Model/DashboardModel.dart';
 import 'package:pos/View/style/app_colors.dart';
 import 'package:smart_sizer/smart_sizer.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -31,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: DeviceUtils.isMobile(context)
           ? null
           : AppBar(
-              
               backgroundColor: AppColors.accent,
               elevation: 4,
               automaticallyImplyLeading: false,
@@ -187,7 +187,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: DeviceUtils.valueDecider(context, onMobile: 1, onTablet: 2, onDesktop: 3),
+            crossAxisCount: DeviceUtils.valueDecider(
+              context,
+              onMobile: 1,
+              onTablet: 2,
+              onDesktop: 3,
+            ),
             crossAxisSpacing: screenWidth * 0.04,
             mainAxisSpacing: screenHeight * 0.04,
             childAspectRatio: 1.3,
@@ -346,7 +351,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${item.revenue.toStringAsFixed(2)} دينار',
+                            AppConstants.formatCurrency(item.revenue),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -462,7 +467,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '${transaction.amount.toStringAsFixed(2)} دينار',
+                            AppConstants.formatCurrency(transaction.amount),
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

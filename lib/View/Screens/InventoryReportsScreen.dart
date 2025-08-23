@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/View/Widgets/InventoryReportWidget.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة تقارير المخزون
 class InventoryReportsScreen extends StatefulWidget {
@@ -21,7 +22,10 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadData();
+    // تأجيل تحميل البيانات حتى بعد اكتمال البناء الأولي
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   @override
@@ -31,8 +35,16 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
   }
 
   Future<void> _loadData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
-    await context.read<ProductProvider>().loadProducts();
+
+    try {
+      await context.read<ProductProvider>().loadProducts();
+    } catch (e) {
+      // في حالة حدوث خطأ، سيتم عرضه من خلال provider
+    }
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
@@ -234,14 +246,17 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
       [
         _buildStatRow(
           'متوسط سعر البيع',
-          '${avgSalePrice.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(avgSalePrice),
         ),
         _buildStatRow(
           'متوسط سعر الشراء',
-          '${avgBuyPrice.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(avgBuyPrice),
         ),
-        _buildStatRow('أعلى سعر بيع', '${maxSalePrice.toStringAsFixed(2)} ر.س'),
-        _buildStatRow('أقل سعر بيع', '${minSalePrice.toStringAsFixed(2)} ر.س'),
+        _buildStatRow(
+          'أعلى سعر بيع',
+          AppConstants.formatCurrency(maxSalePrice),
+        ),
+        _buildStatRow('أقل سعر بيع', AppConstants.formatCurrency(minSalePrice)),
       ],
     );
   }
@@ -320,15 +335,15 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
       [
         _buildStatRow(
           'قيمة المبيعات المتوقعة',
-          '${totalSaleValue.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(totalSaleValue),
         ),
         _buildStatRow(
           'تكلفة الشراء',
-          '${totalPurchaseValue.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(totalPurchaseValue),
         ),
         _buildStatRow(
           'الربح المتوقع',
-          '${totalProfit.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(totalProfit),
           color: Colors.green,
         ),
         _buildStatRow(
@@ -394,18 +409,18 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
       [
         _buildStatRow(
           'الربح الشهري المتوقع',
-          '${monthlyProfit.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(monthlyProfit),
         ),
         _buildStatRow(
           'الربح السنوي المتوقع',
-          '${yearlyProfit.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(yearlyProfit),
         ),
         if (bestProduct != null)
           _buildStatRow('أفضل منتج ربحية', bestProduct.name),
         if (bestProduct != null)
           _buildStatRow(
             'ربح الوحدة',
-            '${bestProduct.profitMargin.toStringAsFixed(2)} ر.س',
+            AppConstants.formatCurrency(bestProduct.profitMargin),
           ),
       ],
     );
@@ -417,7 +432,9 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
       0.0,
       (sum, p) => sum + (p.salePrice * p.quantity),
     );
-    final averageValue = products.isNotEmpty ? totalValue / products.length : 0;
+    final double averageValue = products.isNotEmpty
+        ? (totalValue / products.length).toDouble()
+        : 0.0;
     final stockTurnover = 12.0; // افتراض دوران المخزون 12 مرة سنوياً
     final inventoryDays = 365 / stockTurnover;
 
@@ -428,11 +445,11 @@ class _InventoryReportsScreenState extends State<InventoryReportsScreen>
       [
         _buildStatRow(
           'قيمة المخزون الإجمالية',
-          '${totalValue.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(totalValue),
         ),
         _buildStatRow(
           'متوسط قيمة المنتج',
-          '${averageValue.toStringAsFixed(2)} ر.س',
+          AppConstants.formatCurrency(averageValue),
         ),
         _buildStatRow(
           'دوران المخزون (سنوي)',

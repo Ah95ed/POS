@@ -3,14 +3,16 @@ import 'package:pos/Helper/Locale/Language.dart';
 import 'package:pos/Helper/Locale/LanguageController.dart';
 import 'package:pos/Helper/Log/LogApp.dart';
 import 'package:pos/Helper/Service/Service.dart';
+import 'package:pos/Helper/Utils/DeviceUtils.dart';
 import 'package:pos/View/Screens/DashboardScreen.dart';
 import 'package:pos/View/Screens/ProductsScreen.dart';
 import 'package:pos/View/Screens/SalesScreen.dart';
+import 'package:pos/View/Screens/CustomersScreen.dart';
 import 'package:pos/View/Screens/PurchasesScreen.dart';
 import 'package:pos/View/Screens/ReportsScreen.dart';
 import 'package:pos/View/Screens/SettingsScreen.dart';
 import 'package:pos/View/style/app_colors.dart';
-import 'package:smart_sizer/smart_sizer.dart';
+import 'package:smart_sizer/smart_sizer.dart' hide DeviceUtils;
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -26,6 +28,7 @@ class _MainLayoutState extends State<MainLayout> {
     const DashboardScreen(),
     const ProductsScreen(),
     const SalesScreen(),
+    const CustomersScreen(),
     const PurchasesScreen(),
     const ReportsScreen(),
     const SettingsScreen(),
@@ -48,15 +51,20 @@ class _MainLayoutState extends State<MainLayout> {
       selectedIcon: Icons.point_of_sale,
     ),
     NavigationItem(
-      title: 'المشتريات',
-      icon: Icons.shopping_cart_outlined,
-      selectedIcon: Icons.shopping_cart,
+      title: 'العملاء',
+      icon: Icons.people_outlined,
+      selectedIcon: Icons.people,
     ),
-    NavigationItem(
-      title: 'التقارير',
-      icon: Icons.analytics_outlined,
-      selectedIcon: Icons.analytics,
-    ),
+    // NavigationItem(
+    //   title: 'المشتريات',
+    //   icon: Icons.shopping_cart_outlined,
+    //   selectedIcon: Icons.shopping_cart,
+    // ),
+    // NavigationItem(
+    //   title: 'التقارير',
+    //   icon: Icons.analytics_outlined,
+    //   selectedIcon: Icons.analytics,
+    // ),
     NavigationItem(
       title: 'الإعدادات',
       icon: Icons.settings_outlined,

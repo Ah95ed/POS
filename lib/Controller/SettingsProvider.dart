@@ -78,7 +78,7 @@ class SettingsProvider extends ChangeNotifier {
   List<String> get supportedLanguages => ['ar', 'en'];
 
   // قائمة العملات المدعومة
-  List<String> get supportedCurrencies => ['دينار', 'دولار', 'يورو'];
+  List<String> get supportedCurrencies => ['دينار', 'ريال', 'دولار', 'يورو'];
 
   // الحصول على النص المترجم
   String translate(String key) {

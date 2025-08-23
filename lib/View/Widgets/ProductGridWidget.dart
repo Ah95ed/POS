@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Model/ProductModel.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شبكة عرض المنتجات في نقطة البيع
 class ProductGridWidget extends StatelessWidget {
@@ -134,7 +135,7 @@ class ProductTile extends StatelessWidget {
                 children: [
                   // السعر
                   Text(
-                    '${product.salePrice.toStringAsFixed(2)} ر.س',
+                    AppConstants.formatCurrency(product.salePrice),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

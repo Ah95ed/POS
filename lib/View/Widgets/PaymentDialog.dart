@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// نافذة الدفع
 class PaymentDialog extends StatefulWidget {
@@ -44,7 +45,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
   @override
   void initState() {
     super.initState();
-    _paidAmountController.text = widget.total.toStringAsFixed(2);
+    _paidAmountController.text = widget.total.toStringAsFixed(3);
     _paidAmount = widget.total;
     _calculateChange();
   }
@@ -186,7 +187,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Text(
-                '${widget.total.toStringAsFixed(2)} ر.س',
+                AppConstants.formatCurrency(widget.total),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -267,7 +268,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
           ],
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.attach_money),
-            suffixText: 'ر.س',
+            suffixText: AppConstants.currencyName,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -325,7 +326,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
             ],
           ),
           Text(
-            '${change.abs().toStringAsFixed(2)} ر.س',
+            AppConstants.formatCurrency(change.abs()),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -365,14 +366,14 @@ class _PaymentDialogState extends State<PaymentDialog> {
               onPressed: () {
                 setState(() {
                   _paidAmount = amount;
-                  _paidAmountController.text = amount.toStringAsFixed(2);
+                  _paidAmountController.text = amount.toStringAsFixed(3);
                 });
               },
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.green[700]!),
                 foregroundColor: Colors.green[700],
               ),
-              child: Text('${amount.toStringAsFixed(0)} ر.س'),
+              child: Text(AppConstants.formatCurrency(amount)),
             );
           }).toList(),
         ),

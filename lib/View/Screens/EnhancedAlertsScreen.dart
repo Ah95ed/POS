@@ -4,6 +4,7 @@ import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/View/Widgets/ProductCard.dart';
 import 'package:pos/View/Widgets/AddEditProductDialog.dart';
+import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة التنبيهات المحسنة
 class EnhancedAlertsScreen extends StatefulWidget {
@@ -235,7 +236,7 @@ class _EnhancedAlertsScreenState extends State<EnhancedAlertsScreen>
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 Text(
-                  'القيمة الإجمالية: ${totalValue.toStringAsFixed(2)} ر.س',
+                  'القيمة الإجمالية: ${AppConstants.formatCurrency(totalValue)}',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
