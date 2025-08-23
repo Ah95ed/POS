@@ -5,7 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// قاعدة بيانات نقطة البيع الشاملة
 class POSDatabase {
-  static const version = 3;
+  static const version = 5;
   static const dbName = 'POS_System.db';
   static Database? _database;
 
@@ -16,6 +16,8 @@ class POSDatabase {
   static const String customersTable = 'Customers';
   static const String paymentMethodsTable = 'PaymentMethods';
   static const String categoriesTable = 'Categories';
+  static const String invoicesTable = 'Invoices';
+  static const String invoiceItemsTable = 'InvoiceItems';
 
   // حقول جدول المنتجات (Items)
   static const String itemId = 'id';
@@ -88,6 +90,29 @@ class POSDatabase {
   static const String categoryIcon = 'icon';
   static const String categoryColor = 'color';
   static const String categoryIsActive = 'is_active';
+
+  // حقول جدول الفواتير (Invoices)
+  static const String invoiceId = 'id';
+  static const String invoiceCustomerId = 'customer_id';
+  static const String invoiceNumber = 'invoice_number';
+  static const String invoiceDate = 'date';
+  static const String invoiceTotalAmount = 'total_amount';
+  static const String invoiceStatus = 'status';
+  static const String invoiceCustomerName = 'customer_name';
+  static const String invoiceCustomerPhone = 'customer_phone';
+  static const String invoiceCreatedAt = 'created_at';
+  static const String invoiceUpdatedAt = 'updated_at';
+  static const String invoiceNotes = 'notes';
+
+  // حقول جدول عناصر الفواتير (InvoiceItems)
+  static const String invoiceItemId = 'id';
+  static const String invoiceItemInvoiceId = 'invoice_id';
+  static const String invoiceItemProductId = 'product_id';
+  static const String invoiceItemProductName = 'product_name';
+  static const String invoiceItemProductCode = 'product_code';
+  static const String invoiceItemQuantity = 'quantity';
+  static const String invoiceItemPrice = 'price';
+  static const String invoiceItemTotal = 'total';
 
   POSDatabase() {
     database;
@@ -233,6 +258,40 @@ class POSDatabase {
       )
     ''');
 
+    // جدول الفواتير
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $invoicesTable (
+        $invoiceId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $invoiceCustomerId INTEGER,
+        $invoiceNumber TEXT UNIQUE NOT NULL,
+        $invoiceDate TEXT NOT NULL,
+        $invoiceTotalAmount REAL NOT NULL DEFAULT 0,
+        $invoiceStatus TEXT NOT NULL DEFAULT 'pending',
+        $invoiceCustomerName TEXT,
+        $invoiceCustomerPhone TEXT,
+        $invoiceCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        $invoiceUpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        $invoiceNotes TEXT,
+        FOREIGN KEY ($invoiceCustomerId) REFERENCES $customersTable ($customerId)
+      )
+    ''');
+
+    // جدول عناصر الفواتير
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $invoiceItemsTable (
+        $invoiceItemId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $invoiceItemInvoiceId INTEGER NOT NULL,
+        $invoiceItemProductId INTEGER NOT NULL,
+        $invoiceItemProductName TEXT NOT NULL,
+        $invoiceItemProductCode TEXT NOT NULL,
+        $invoiceItemQuantity INTEGER NOT NULL DEFAULT 1,
+        $invoiceItemPrice REAL NOT NULL DEFAULT 0,
+        $invoiceItemTotal REAL NOT NULL DEFAULT 0,
+        FOREIGN KEY ($invoiceItemInvoiceId) REFERENCES $invoicesTable ($invoiceId) ON DELETE CASCADE,
+        FOREIGN KEY ($invoiceItemProductId) REFERENCES $itemsTable ($itemId)
+      )
+    ''');
+
     // إدراج البيانات الأولية
     await _insertInitialData(db);
   }
@@ -256,6 +315,49 @@ class POSDatabase {
       // إضافة حقل الأرشفة
       await db.execute(
         'ALTER TABLE $itemsTable ADD COLUMN $itemIsArchived INTEGER DEFAULT 0',
+      );
+    }
+
+    if (oldVersion < 4) {
+      // إضافة جداول الفواتير
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $invoicesTable (
+          $invoiceId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $invoiceCustomerId INTEGER,
+          $invoiceNumber TEXT UNIQUE NOT NULL,
+          $invoiceDate TEXT NOT NULL,
+          $invoiceTotalAmount REAL NOT NULL DEFAULT 0,
+          $invoiceStatus TEXT NOT NULL DEFAULT 'pending',
+          $invoiceCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          $invoiceUpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          $invoiceNotes TEXT,
+          FOREIGN KEY ($invoiceCustomerId) REFERENCES $customersTable ($customerId)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $invoiceItemsTable (
+          $invoiceItemId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $invoiceItemInvoiceId INTEGER NOT NULL,
+          $invoiceItemProductId INTEGER NOT NULL,
+          $invoiceItemProductName TEXT NOT NULL,
+          $invoiceItemProductCode TEXT NOT NULL,
+          $invoiceItemQuantity INTEGER NOT NULL DEFAULT 1,
+          $invoiceItemPrice REAL NOT NULL DEFAULT 0,
+          $invoiceItemTotal REAL NOT NULL DEFAULT 0,
+          FOREIGN KEY ($invoiceItemInvoiceId) REFERENCES $invoicesTable ($invoiceId) ON DELETE CASCADE,
+          FOREIGN KEY ($invoiceItemProductId) REFERENCES $itemsTable ($itemId)
+        )
+      ''');
+    }
+
+    if (oldVersion < 5) {
+      // إضافة حقول العميل إلى جدول الفواتير
+      await db.execute(
+        'ALTER TABLE $invoicesTable ADD COLUMN $invoiceCustomerName TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE $invoicesTable ADD COLUMN $invoiceCustomerPhone TEXT',
       );
     }
   }

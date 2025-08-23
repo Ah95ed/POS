@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/CustomerProvider.dart';
-import 'package:pos/Model/SaleModel.dart';
+import 'package:pos/Model/SaleModel.dart' hide CustomerType;
 import 'package:pos/View/Widgets/CustomerCard.dart';
 import 'package:pos/View/Widgets/CustomerFormDialog.dart';
 import 'package:pos/View/Widgets/CustomerStatsWidget.dart';

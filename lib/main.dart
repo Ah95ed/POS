@@ -8,6 +8,7 @@ import 'package:pos/Controller/ProductProvider.dart';
 import 'package:pos/Controller/SaleProvider.dart';
 import 'package:pos/Controller/SettingsProvider.dart';
 import 'package:pos/Controller/CustomerProvider.dart';
+import 'package:pos/Controller/InvoiceProvider.dart';
 import 'package:pos/Helper/Locale/LanguageController.dart';
 import 'package:pos/Helper/Service/Service.dart';
 import 'package:pos/View/Screens/MainLayout.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
             ChangeNotifierProvider(create: (_) => SaleProvider()),
             ChangeNotifierProvider(create: (_) => SettingsProvider()),
             ChangeNotifierProvider(create: (_) => CustomerProvider()),
+            ChangeNotifierProvider(create: (_) => InvoiceProvider()),
           ],
           child: const MyApp(),
           // child: DevicePreview(

@@ -207,7 +207,7 @@ class SaleItem {
     return SaleItem(
       id: id ?? this.id,
       saleId: saleId ?? this.saleId,
-      productId: productId ,
+      productId: productId,
       productCode: productCode ?? this.productCode,
       productName: productName ?? this.productName,
       unitPrice: unitPrice ?? this.unitPrice,
@@ -761,5 +761,26 @@ class SalesStats {
       periodStart: start,
       periodEnd: end,
     );
+  }
+}
+
+/// أنواع العملاء للتصفية
+enum CustomerType { all, vip, regular, withPurchases, withoutPurchases }
+
+/// امتداد لـ CustomerType لإضافة وظائف مساعدة
+extension CustomerTypeExtension on CustomerType {
+  String get label {
+    switch (this) {
+      case CustomerType.all:
+        return 'الكل';
+      case CustomerType.vip:
+        return 'مميز';
+      case CustomerType.regular:
+        return 'عادي';
+      case CustomerType.withPurchases:
+        return 'لديه مشتريات';
+      case CustomerType.withoutPurchases:
+        return 'بدون مشتريات';
+    }
   }
 }

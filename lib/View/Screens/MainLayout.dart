@@ -8,6 +8,7 @@ import 'package:pos/View/Screens/DashboardScreen.dart';
 import 'package:pos/View/Screens/ProductsScreen.dart';
 import 'package:pos/View/Screens/SalesScreen.dart';
 import 'package:pos/View/Screens/CustomersScreen.dart';
+import 'package:pos/View/Screens/InvoicesScreen.dart';
 import 'package:pos/View/Screens/PurchasesScreen.dart';
 import 'package:pos/View/Screens/ReportsScreen.dart';
 import 'package:pos/View/Screens/SettingsScreen.dart';
@@ -29,8 +30,7 @@ class _MainLayoutState extends State<MainLayout> {
     const ProductsScreen(),
     const SalesScreen(),
     const CustomersScreen(),
-    const PurchasesScreen(),
-    const ReportsScreen(),
+    const InvoicesScreen(),
     const SettingsScreen(),
   ];
 
@@ -54,6 +54,11 @@ class _MainLayoutState extends State<MainLayout> {
       title: 'العملاء',
       icon: Icons.people_outlined,
       selectedIcon: Icons.people,
+    ),
+    NavigationItem(
+      title: 'الفواتير',
+      icon: Icons.receipt_long_outlined,
+      selectedIcon: Icons.receipt_long,
     ),
     // NavigationItem(
     //   title: 'المشتريات',
@@ -202,8 +207,8 @@ class _MainLayoutState extends State<MainLayout> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: context.getHeight(60),
-            height: context.getHeight(60),
+            width: context.getMinSize(60),
+            height: context.getMinSize(60),
             decoration: BoxDecoration(
               color: AppColors.background.withOpacity(0.7),
               borderRadius: BorderRadius.circular(40),
@@ -227,7 +232,7 @@ class _MainLayoutState extends State<MainLayout> {
             'إدارة شاملة لمتجرك',
             style: TextStyle(
               color: AppColors.background.withOpacity(0.8),
-              fontSize: 14,
+              fontSize: context.getFontSize(14),
             ),
           ),
         ],
@@ -247,14 +252,14 @@ class _MainLayoutState extends State<MainLayout> {
           color: isSelected
               ? AppColors.accent
               : AppColors.textMain.withOpacity(0.7),
-          size: 24,
+          size: context.getMinSize(24),
         ),
         title: Text(
           item.title,
           style: TextStyle(
             color: isSelected ? AppColors.accent : AppColors.textMain,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 16,
+            fontSize: context.getFontSize(16),
           ),
         ),
         selected: isSelected,
