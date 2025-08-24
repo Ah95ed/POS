@@ -1,21 +1,21 @@
 /// ثوابت التطبيق
 class AppConstants {
   // إعدادات العملة
-  static const String currencyName = 'دينار';
-  static const String currencySymbol = 'د.ك';
-  static const String currencyCode = 'KWD';
+  static const String currencyName = 'د.ع';
+  static const String currencySymbol = 'د.ع';
+  static const String currencyCode = 'IQD';
 
   // تنسيق العملة
   static String formatCurrency(double amount) {
-    return '${amount.toStringAsFixed(3)} $currencyName';
+    return '${amount.toStringAsFixed(0)} $currencyName';
   }
 
   static String formatCurrencyWithSymbol(double amount) {
-    return '${amount.toStringAsFixed(3)} $currencySymbol';
+    return '${amount.toStringAsFixed(0)} $currencySymbol';
   }
 
   // إعدادات أخرى
-  static const int decimalPlaces = 3; // الدينار الكويتي يستخدم 3 خانات عشرية
+  static const int decimalPlaces = 0; // الدينار العراقي لا يستخدم خانات عشرية
   static const String appName = 'نظام نقاط البيع';
   static const String appVersion = '1.0.0';
 

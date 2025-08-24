@@ -5,7 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// قاعدة بيانات نقطة البيع الشاملة
 class POSDatabase {
-  static const version = 5;
+  static const version = 6;
   static const dbName = 'POS_System.db';
   static Database? _database;
 
@@ -18,6 +18,8 @@ class POSDatabase {
   static const String categoriesTable = 'Categories';
   static const String invoicesTable = 'Invoices';
   static const String invoiceItemsTable = 'InvoiceItems';
+  static const String debtsTable = 'Debts';
+  static const String debtTransactionsTable = 'DebtTransactions';
 
   // حقول جدول المنتجات (Items)
   static const String itemId = 'id';
@@ -113,6 +115,30 @@ class POSDatabase {
   static const String invoiceItemQuantity = 'quantity';
   static const String invoiceItemPrice = 'price';
   static const String invoiceItemTotal = 'total';
+
+  // حقول جدول الديون (Debts)
+  static const String debtId = 'id';
+  static const String debtPartyId = 'party_id';
+  static const String debtPartyType = 'party_type';
+  static const String debtPartyName = 'party_name';
+  static const String debtPartyPhone = 'party_phone';
+  static const String debtAmount = 'amount';
+  static const String debtPaidAmount = 'paid_amount';
+  static const String debtRemainingAmount = 'remaining_amount';
+  static const String debtDueDate = 'due_date';
+  static const String debtStatus = 'status';
+  static const String debtArchived = 'archived';
+  static const String debtNotes = 'notes';
+  static const String debtCreatedAt = 'created_at';
+  static const String debtUpdatedAt = 'updated_at';
+
+  // حقول جدول معاملات الديون (DebtTransactions)
+  static const String debtTransactionId = 'id';
+  static const String debtTransactionDebtId = 'debt_id';
+  static const String debtTransactionAmountPaid = 'amount_paid';
+  static const String debtTransactionDate = 'date';
+  static const String debtTransactionNotes = 'notes';
+  static const String debtTransactionCreatedAt = 'created_at';
 
   POSDatabase() {
     database;
@@ -292,6 +318,56 @@ class POSDatabase {
       )
     ''');
 
+    // جدول الديون
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $debtsTable (
+        $debtId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $debtPartyId INTEGER NOT NULL,
+        $debtPartyType TEXT NOT NULL CHECK ($debtPartyType IN ('customer', 'supplier')),
+        $debtPartyName TEXT NOT NULL,
+        $debtPartyPhone TEXT,
+        $debtAmount REAL NOT NULL DEFAULT 0,
+        $debtPaidAmount REAL NOT NULL DEFAULT 0,
+        $debtRemainingAmount REAL NOT NULL DEFAULT 0,
+        $debtDueDate TEXT NOT NULL,
+        $debtStatus TEXT NOT NULL DEFAULT 'unpaid' CHECK ($debtStatus IN ('unpaid', 'partiallyPaid', 'paid')),
+        $debtArchived INTEGER DEFAULT 0,
+        $debtNotes TEXT,
+        $debtCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        $debtUpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    // جدول معاملات الديون
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $debtTransactionsTable (
+        $debtTransactionId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $debtTransactionDebtId INTEGER NOT NULL,
+        $debtTransactionAmountPaid REAL NOT NULL DEFAULT 0,
+        $debtTransactionDate TEXT NOT NULL,
+        $debtTransactionNotes TEXT,
+        $debtTransactionCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ($debtTransactionDebtId) REFERENCES $debtsTable ($debtId) ON DELETE CASCADE
+      )
+    ''');
+
+    // إنشاء فهارس لتحسين الأداء
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_debts_party_id ON $debtsTable ($debtPartyId)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_debts_party_type ON $debtsTable ($debtPartyType)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_debts_status ON $debtsTable ($debtStatus)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_debts_archived ON $debtsTable ($debtArchived)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_debt_transactions_debt_id ON $debtTransactionsTable ($debtTransactionDebtId)',
+    );
+
     // إدراج البيانات الأولية
     await _insertInitialData(db);
   }
@@ -358,6 +434,57 @@ class POSDatabase {
       );
       await db.execute(
         'ALTER TABLE $invoicesTable ADD COLUMN $invoiceCustomerPhone TEXT',
+      );
+    }
+
+    if (oldVersion < 6) {
+      // إضافة جداول الديون
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $debtsTable (
+          $debtId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $debtPartyId INTEGER NOT NULL,
+          $debtPartyType TEXT NOT NULL CHECK ($debtPartyType IN ('customer', 'supplier')),
+          $debtPartyName TEXT NOT NULL,
+          $debtPartyPhone TEXT,
+          $debtAmount REAL NOT NULL DEFAULT 0,
+          $debtPaidAmount REAL NOT NULL DEFAULT 0,
+          $debtRemainingAmount REAL NOT NULL DEFAULT 0,
+          $debtDueDate TEXT NOT NULL,
+          $debtStatus TEXT NOT NULL DEFAULT 'unpaid' CHECK ($debtStatus IN ('unpaid', 'partiallyPaid', 'paid')),
+          $debtArchived INTEGER DEFAULT 0,
+          $debtNotes TEXT,
+          $debtCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          $debtUpdatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $debtTransactionsTable (
+          $debtTransactionId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $debtTransactionDebtId INTEGER NOT NULL,
+          $debtTransactionAmountPaid REAL NOT NULL DEFAULT 0,
+          $debtTransactionDate TEXT NOT NULL,
+          $debtTransactionNotes TEXT,
+          $debtTransactionCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ($debtTransactionDebtId) REFERENCES $debtsTable ($debtId) ON DELETE CASCADE
+        )
+      ''');
+
+      // إنشاء فهارس لتحسين الأداء
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_debts_party_id ON $debtsTable ($debtPartyId)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_debts_party_type ON $debtsTable ($debtPartyType)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_debts_status ON $debtsTable ($debtStatus)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_debts_archived ON $debtsTable ($debtArchived)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_debt_transactions_debt_id ON $debtTransactionsTable ($debtTransactionDebtId)',
       );
     }
   }

@@ -432,6 +432,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       context: context,
       builder: (context) => InvoiceFormDialog(
         title: 'تعديل الفاتورة',
+        
         invoice: invoice,
         onSave: (updatedInvoice) async {
           final provider = context.read<InvoiceProvider>();

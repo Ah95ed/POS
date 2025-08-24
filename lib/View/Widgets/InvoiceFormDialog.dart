@@ -79,8 +79,8 @@ class _InvoiceFormDialogState extends State<InvoiceFormDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: context.getWidth(90),
-        height: context.getHeight(85),
+        width: context.getWidth(250),
+        height: context.getHeight(400),
         padding: EdgeInsets.all(context.getWidth(6)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

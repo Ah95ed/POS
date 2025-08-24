@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Helper/Locale/Language.dart';
-import 'package:pos/Helper/Locale/LanguageController.dart';
 import 'package:pos/Helper/Log/LogApp.dart';
 import 'package:pos/Helper/Service/Service.dart';
 import 'package:pos/Helper/Utils/DeviceUtils.dart';
@@ -9,8 +8,7 @@ import 'package:pos/View/Screens/ProductsScreen.dart';
 import 'package:pos/View/Screens/SalesScreen.dart';
 import 'package:pos/View/Screens/CustomersScreen.dart';
 import 'package:pos/View/Screens/InvoicesScreen.dart';
-import 'package:pos/View/Screens/PurchasesScreen.dart';
-import 'package:pos/View/Screens/ReportsScreen.dart';
+import 'package:pos/View/Screens/DebtsScreen.dart';
 import 'package:pos/View/Screens/SettingsScreen.dart';
 import 'package:pos/View/style/app_colors.dart';
 import 'package:smart_sizer/smart_sizer.dart' hide DeviceUtils;
@@ -31,6 +29,7 @@ class _MainLayoutState extends State<MainLayout> {
     const SalesScreen(),
     const CustomersScreen(),
     const InvoicesScreen(),
+    const DebtsScreen(),
     const SettingsScreen(),
   ];
 
@@ -60,6 +59,11 @@ class _MainLayoutState extends State<MainLayout> {
       icon: Icons.receipt_long_outlined,
       selectedIcon: Icons.receipt_long,
     ),
+    NavigationItem(
+      title: 'الديون والحسابات',
+      icon: Icons.account_balance_wallet_outlined,
+      selectedIcon: Icons.account_balance_wallet,
+    ),
     // NavigationItem(
     //   title: 'المشتريات',
     //   icon: Icons.shopping_cart_outlined,
@@ -80,6 +84,10 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final isWideScreen = context.screenHeight > 800;
+    // final medH = MediaQuery.of(context).size.height;
+    // final wid = context.screenWidth;
+    // final hi = context.screenHeight;
+    // logError("message === medH = $medH === height = $hi");
     return Scaffold(
       appBar: DeviceUtils.isMobile(context)
           ? AppBar(
@@ -210,7 +218,7 @@ class _MainLayoutState extends State<MainLayout> {
             width: context.getMinSize(60),
             height: context.getMinSize(60),
             decoration: BoxDecoration(
-              color: AppColors.background.withOpacity(0.7),
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(40),
             ),
             child: Icon(
@@ -219,7 +227,7 @@ class _MainLayoutState extends State<MainLayout> {
               color: AppColors.textMain,
             ),
           ),
-          SizedBox(height: context.getHeight(8)),
+          SizedBox(height: context.getHeight(6)),
           Text(
             trans[Language.pos],
             style: TextStyle(
@@ -231,8 +239,8 @@ class _MainLayoutState extends State<MainLayout> {
           Text(
             'إدارة شاملة لمتجرك',
             style: TextStyle(
-              color: AppColors.background.withOpacity(0.8),
-              fontSize: context.getFontSize(14),
+              color: AppColors.background,
+              fontSize: context.getFontSize(10),
             ),
           ),
         ],
@@ -249,9 +257,7 @@ class _MainLayoutState extends State<MainLayout> {
       child: ListTile(
         leading: Icon(
           isSelected ? item.selectedIcon : item.icon,
-          color: isSelected
-              ? AppColors.accent
-              : AppColors.textMain.withOpacity(0.7),
+          color: isSelected ? AppColors.accent : AppColors.textMain,
           size: context.getMinSize(24),
         ),
         title: Text(
@@ -259,7 +265,7 @@ class _MainLayoutState extends State<MainLayout> {
           style: TextStyle(
             color: isSelected ? AppColors.accent : AppColors.textMain,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: context.getFontSize(16),
+            fontSize: context.getFontSize(8),
           ),
         ),
         selected: isSelected,
