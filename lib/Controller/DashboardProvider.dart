@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:pos/Helper/DataBase/DataBaseSqflite.dart';
+import 'package:pos/Helper/DataBase/POSDatabase.dart';
 import 'package:pos/Helper/Log/LogApp.dart';
 import 'package:pos/Model/DashboardModel.dart';
 import 'package:pos/Helper/Constants/AppConstants.dart';
+import 'package:pos/Model/SaleModel.dart';
+import 'package:pos/Repository/CustomerRepository.dart';
+import 'package:pos/Repository/DebtRepository.dart';
+import 'package:pos/Repository/InvoiceRepository.dart';
+import 'package:pos/Repository/SalesRepository.dart';
 
 class DashboardProvider extends ChangeNotifier {
   final DataBaseSqflite _database = DataBaseSqflite();
@@ -11,13 +17,26 @@ class DashboardProvider extends ChangeNotifier {
   bool _isLoading = false;
   String _errorMessage = '';
 
+  // Filters for custom date range
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   // Getters
   DashboardModel get dashboardData => _dashboardData;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
+  DateTime? get startDate => _startDate;
+  DateTime? get endDate => _endDate;
 
   // Initialize dashboard data
   Future<void> initializeDashboard() async {
+    await loadDashboardData();
+  }
+
+  // Update date range and reload
+  Future<void> setDateRange(DateTime? start, DateTime? end) async {
+    _startDate = start;
+    _endDate = end;
     await loadDashboardData();
   }
 
@@ -35,6 +54,10 @@ class DashboardProvider extends ChangeNotifier {
         _getLowStockItems(),
         _getTopSellingItems(),
         _getRecentTransactions(),
+        _getSalesStats(),
+        _getInvoiceStatusCounts(),
+        _getTopCustomers(),
+        _getDebtSummaries(),
       ]);
 
       final totalItems = results[0] as int;
@@ -43,6 +66,10 @@ class DashboardProvider extends ChangeNotifier {
       final lowStockItems = results[3] as int;
       final topSellingItems = results[4] as List<TopSellingItem>;
       final recentTransactions = results[5] as List<RecentTransaction>;
+      final salesStats = results[6] as SalesStats?;
+      final invoiceStatusCounts = results[7] as Map<String, int>;
+      final topCustomers = results[8] as List<CustomerModel>;
+      final debtSummaries = results[9] as List<DebtSummary>;
 
       _dashboardData = DashboardModel(
         totalItems: totalItems,
@@ -52,6 +79,10 @@ class DashboardProvider extends ChangeNotifier {
         lowStockItems: lowStockItems,
         topSellingItems: topSellingItems,
         recentTransactions: recentTransactions,
+        salesStats: salesStats,
+        invoiceStatusCounts: invoiceStatusCounts,
+        topCustomers: topCustomers,
+        debtSummaries: debtSummaries,
       );
 
       logInfo("Dashboard data loaded successfully");
@@ -194,6 +225,76 @@ class DashboardProvider extends ChangeNotifier {
       return transactions;
     } catch (e) {
       logInfo("Error getting recent transactions: $e");
+      return [];
+    }
+  }
+
+  Future<SalesStats?> _getSalesStats() async {
+    try {
+      final repo = SalesRepository();
+      final result = await repo.getSalesStats(
+        startDate: _startDate,
+        endDate: _endDate,
+      );
+      return result.isSuccess ? result.data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, int>> _getInvoiceStatusCounts() async {
+    try {
+      final repo = InvoiceRepository();
+      final statsResult = await repo.getInvoiceStats();
+      if (statsResult.isSuccess) {
+        final statusList =
+            statsResult.data!["status"] as List<Map<String, Object?>>?;
+        final map = <String, int>{};
+        if (statusList != null) {
+          for (final row in statusList) {
+            final status =
+                (row['${POSDatabase.invoiceStatus}'] as String?) ?? 'unknown';
+            final count = (row['count'] as int?) ?? 0;
+            map[status] = count;
+          }
+        }
+        return map;
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<List<CustomerModel>> _getTopCustomers() async {
+    try {
+      final repo = CustomerRepository();
+      final result = await repo.getTopCustomers(limit: 5);
+      return result.isSuccess ? (result.data ?? []) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<DebtSummary>> _getDebtSummaries() async {
+    try {
+      final repo = DebtRepository();
+      final result = await repo.getDebtsStatistics();
+      if (result.isSuccess) {
+        final data = result.data!;
+        final status = (data['status'] as List<Map<String, Object?>>?) ?? [];
+        return status
+            .map(
+              (m) => DebtSummary(
+                status: (m['status'] as String?) ?? 'unknown',
+                count: (m['count'] as int?) ?? 0,
+                amount: (m['amount'] as num?)?.toDouble() ?? 0.0,
+              ),
+            )
+            .toList();
+      }
+      return [];
+    } catch (_) {
       return [];
     }
   }

@@ -83,33 +83,20 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    final isWideScreen = context.screenHeight > 800;
-    // final medH = MediaQuery.of(context).size.height;
-    // final wid = context.screenWidth;
-    // final hi = context.screenHeight;
-    // logError("message === medH = $medH === height = $hi");
+    final isWideScreen = context.screenWidth > 800;
+
     return Scaffold(
-      appBar: DeviceUtils.isMobile(context)
-          ? AppBar(
-              // title: Text(trans[Language.dashboard]),
-              // centerTitle: true,
-              // actions: [
-              //   IconButton(
-              //     icon: const Icon(Icons.language),
-              //     onPressed: () {
-              //       // LanguageController.changeLanguage(context);
-              //     },
-              //   ),
-              // ],
-            )
-          : null,
+      appBar: DeviceUtils.isMobile(context) ? AppBar() : null,
       body: Row(
+        
         children: [
           // Side Navigation
-          if (isWideScreen) _buildSideNavigation(),
+          if (isWideScreen) Expanded(flex:1,child:  _buildSideNavigation()),
 
           // Main Content
-          Expanded(child: _screens[_selectedIndex]),
+          Expanded(
+            flex: 5,
+            child: _screens[_selectedIndex]),
         ],
       ),
       drawer: !isWideScreen
@@ -202,7 +189,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildNavigationHeader() {
     return Container(
-      height: context.getHeight(120),
+      height: context.getHeight(170),
       width: context.getWidth(100),
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -223,16 +210,16 @@ class _MainLayoutState extends State<MainLayout> {
             ),
             child: Icon(
               Icons.store,
-              size: context.getMinSize(24),
+              size: context.getMinSize(20),
               color: AppColors.textMain,
             ),
           ),
-          SizedBox(height: context.getHeight(6)),
+          SizedBox(height: context.getHeight(4)),
           Text(
             trans[Language.pos],
             style: TextStyle(
               color: AppColors.background,
-              fontSize: context.getFontSize(12),
+              fontSize: context.getFontSize(10),
               fontWeight: FontWeight.bold,
             ),
           ),

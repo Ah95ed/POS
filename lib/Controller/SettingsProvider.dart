@@ -200,43 +200,109 @@ class SettingsProvider extends ChangeNotifier {
 
   /// الحصول على سمة التطبيق بناءً على الإعدادات
   ThemeData getTheme(BuildContext context) {
-    if (_settings.isDarkMode) {
-      return ThemeData.dark().copyWith(
-        primaryColor: Colors.teal,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.teal,
-          secondary: Colors.tealAccent,
-          surface: AppColors.darkCard,
+    final isDark = _settings.isDarkMode;
+
+    final base = isDark ? ThemeData.dark() : ThemeData.light();
+    final colorScheme =
+        (isDark ? const ColorScheme.dark() : const ColorScheme.light())
+            .copyWith(
+              primary: AppColors.accent,
+              secondary: AppColors.accent,
+              surface: AppColors.card,
+              onPrimary: isDark ? Colors.black : Colors.white,
+              onSecondary: isDark ? Colors.black : Colors.white,
+              onSurface: AppColors.textMain,
+              error: AppColors.error,
+              onError: isDark ? Colors.black : Colors.white,
+            );
+
+    return base.copyWith(
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: AppColors.background,
+      primaryColor: AppColors.accent,
+      cardColor: AppColors.card,
+      shadowColor: AppColors.shadow,
+      dividerColor: AppColors.divider,
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.accent,
+        foregroundColor: colorScheme.onPrimary,
+        elevation: 4,
+        centerTitle: true,
+      ),
+      textTheme: base.textTheme.apply(
+        bodyColor: AppColors.textMain,
+        displayColor: AppColors.textMain,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.card,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border),
         ),
-        scaffoldBackgroundColor: AppColors.darkBackground,
-        cardColor: AppColors.darkCard,
-        shadowColor: AppColors.darkShadow,
-        appBarTheme: AppBarTheme(backgroundColor: Colors.teal.shade800),
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: AppColors.darkTextMain),
-          bodyMedium: TextStyle(color: AppColors.darkTextMain),
-          titleLarge: TextStyle(color: AppColors.darkTextMain),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.border),
         ),
-      );
-    } else {
-      return ThemeData.light().copyWith(
-        primaryColor: Colors.teal,
-        colorScheme: ColorScheme.light(
-          primary: Colors.teal,
-          secondary: Colors.tealAccent,
-          surface: AppColors.lightCard,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.accent, width: 1.2),
         ),
-        scaffoldBackgroundColor: AppColors.lightBackground,
-        cardColor: AppColors.lightCard,
-        shadowColor: AppColors.lightShadow,
-        appBarTheme: AppBarTheme(backgroundColor: Colors.teal),
-        textTheme: TextTheme(
-          bodyLarge: TextStyle(color: AppColors.lightTextMain),
-          bodyMedium: TextStyle(color: AppColors.lightTextMain),
-          titleLarge: TextStyle(color: AppColors.lightTextMain),
+        hintStyle: TextStyle(color: AppColors.textMain),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          foregroundColor: colorScheme.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          elevation: 0,
         ),
-      );
-    }
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          side: BorderSide(color: AppColors.accent),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: isDark
+            ? Colors.white
+            : Colors.black,
+        selectedColor: AppColors.accent,
+        labelStyle: TextStyle(color: AppColors.textMain),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: AppColors.textMain,
+        textColor: AppColors.textMain,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        titleTextStyle: base.textTheme.titleLarge?.copyWith(
+          color: AppColors.textMain,
+          fontWeight: FontWeight.w600,
+        ),
+        contentTextStyle: base.textTheme.bodyMedium?.copyWith(
+          color: AppColors.textMain,
+        ),
+      ),
+    );
   }
 
   /// مسح رسالة الخطأ

@@ -63,25 +63,25 @@ class _DebtsScreenState extends State<DebtsScreen>
           style: TextStyle(
             color: AppColors.textMain,
             fontWeight: FontWeight.bold,
-            fontSize: context.getFontSize(18),
+            fontSize: context.getFontSize(8),
           ),
         ),
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textMain,
         elevation: 2,
-        shadowColor: AppColors.shadow.withOpacity(0.3),
+        shadowColor: AppColors.shadow,
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.textMain,
           indicatorWeight: 3,
           labelColor: AppColors.textMain,
-          unselectedLabelColor: AppColors.textMain.withOpacity(0.7),
+          unselectedLabelColor: AppColors.textMain,
           labelStyle: TextStyle(
-            fontSize: context.getFontSize(12),
+            fontSize: context.getFontSize(8),
             fontWeight: FontWeight.bold,
           ),
           unselectedLabelStyle: TextStyle(
-            fontSize: context.getFontSize(12),
+            fontSize: context.getFontSize(8),
             fontWeight: FontWeight.normal,
           ),
           tabs: const [
@@ -113,7 +113,7 @@ class _DebtsScreenState extends State<DebtsScreen>
           'دين جديد',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: context.getFontSize(14),
+            fontSize: context.getFontSize(8),
           ),
         ),
       ),
@@ -128,13 +128,13 @@ class _DebtsScreenState extends State<DebtsScreen>
         color: AppColors.card,
         border: Border(
           bottom: BorderSide(
-            color: AppColors.accent.withOpacity(0.3),
+            color: AppColors.accent,
             width: 1,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.1),
+            color: AppColors.shadow,
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -147,20 +147,20 @@ class _DebtsScreenState extends State<DebtsScreen>
             controller: _searchController,
             style: TextStyle(
               color: AppColors.textMain,
-              fontSize: context.getFontSize(14),
+              fontSize: context.getFontSize(8),
             ),
             decoration: InputDecoration(
               hintText: 'البحث بالاسم أو رقم الهاتف...',
               hintStyle: TextStyle(
-                color: AppColors.textMain.withOpacity(0.6),
-                fontSize: context.getFontSize(14),
+                color: AppColors.textMain,
+                fontSize: context.getFontSize(8),
               ),
               prefixIcon: Icon(Icons.search, color: AppColors.accent),
               suffixIcon: _searchController.text.isNotEmpty
                   ? IconButton(
                       icon: Icon(
                         Icons.clear,
-                        color: AppColors.textMain.withOpacity(0.7),
+                        color: AppColors.textMain,
                       ),
                       onPressed: () {
                         _searchController.clear();
@@ -171,13 +171,13 @@ class _DebtsScreenState extends State<DebtsScreen>
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: AppColors.accent.withOpacity(0.3),
+                  color: AppColors.accent,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: AppColors.accent.withOpacity(0.3),
+                  color: AppColors.accent,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
@@ -192,7 +192,7 @@ class _DebtsScreenState extends State<DebtsScreen>
             },
           ),
 
-          SizedBox(height: context.getWidth(3)),
+          SizedBox(height: context.getHeight(3)),
 
           // فلاتر سريعة
           Consumer<DebtProvider>(
@@ -279,7 +279,7 @@ class _DebtsScreenState extends State<DebtsScreen>
           border: Border.all(
             color: isSelected
                 ? AppColors.accent
-                : AppColors.accent.withOpacity(0.3),
+                : AppColors.accent,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
@@ -297,8 +297,8 @@ class _DebtsScreenState extends State<DebtsScreen>
           style: TextStyle(
             color: isSelected
                 ? AppColors.textMain
-                : AppColors.textMain.withOpacity(0.7),
-            fontSize: context.getFontSize(12),
+                : AppColors.textMain,
+            fontSize: context.getFontSize(8),
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
@@ -324,7 +324,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Container(
                     padding: EdgeInsets.all(context.getWidth(4)),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
@@ -337,7 +337,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Text(
                     provider.errorMessage!,
                     style: TextStyle(
-                      fontSize: context.getFontSize(16),
+                      fontSize: context.getFontSize(8),
                       color: Colors.red,
                       fontWeight: FontWeight.w500,
                     ),
@@ -361,7 +361,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                     label: Text(
                       'إعادة المحاولة',
                       style: TextStyle(
-                        fontSize: context.getFontSize(14),
+                        fontSize: context.getFontSize(8),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -387,7 +387,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                     ),
                     child: Icon(
                       Icons.account_balance_wallet_outlined,
-                      size: context.getWidth(20),
+                      size: context.getWidth(14),
                       color: AppColors.accent,
                     ),
                   ),
@@ -395,7 +395,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Text(
                     'لا توجد ديون',
                     style: TextStyle(
-                      fontSize: context.getFontSize(18),
+                      fontSize: context.getFontSize(8),
                       color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
                     ),
@@ -404,8 +404,8 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Text(
                     'اضغط على زر "دين جديد" لإضافة دين جديد',
                     style: TextStyle(
-                      fontSize: context.getFontSize(14),
-                      color: AppColors.textMain.withOpacity(0.6),
+                      fontSize: context.getFontSize(8),
+                      color: AppColors.textMain,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -475,7 +475,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Container(
                     padding: EdgeInsets.all(context.getWidth(6)),
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.1),
+                      color: AppColors.accent,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
@@ -488,7 +488,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Text(
                     'لا توجد ديون مؤرشفة',
                     style: TextStyle(
-                      fontSize: context.getFontSize(18),
+                      fontSize: context.getFontSize(8),
                       color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
                     ),
@@ -497,8 +497,8 @@ class _DebtsScreenState extends State<DebtsScreen>
                   Text(
                     'الديون المؤرشفة ستظهر هنا',
                     style: TextStyle(
-                      fontSize: context.getFontSize(14),
-                      color: AppColors.textMain.withOpacity(0.6),
+                      fontSize: context.getFontSize(8),
+                      color: AppColors.textMain,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -823,7 +823,7 @@ class _DebtsScreenState extends State<DebtsScreen>
                     onPressed: () => Navigator.of(context).pop(),
                     icon: Icon(
                       Icons.close,
-                      color: AppColors.textMain.withOpacity(0.7),
+                      color: AppColors.textMain,
                     ),
                   ),
                 ],

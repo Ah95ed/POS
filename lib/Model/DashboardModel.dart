@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Model/SaleModel.dart';
 
 class DashboardModel {
   final int totalItems;
@@ -9,6 +10,12 @@ class DashboardModel {
   final List<TopSellingItem> topSellingItems;
   final List<RecentTransaction> recentTransactions;
 
+  // New fields for enhanced dashboard
+  final SalesStats? salesStats; // aggregated sales stats for a period
+  final Map<String, int>? invoiceStatusCounts; // paid/unpaid/overdue
+  final List<CustomerModel>? topCustomers; // top customers by purchases
+  final List<DebtSummary>? debtSummaries; // summarized debts info
+
   DashboardModel({
     required this.totalItems,
     required this.totalSalesValue,
@@ -17,6 +24,10 @@ class DashboardModel {
     required this.lowStockItems,
     required this.topSellingItems,
     required this.recentTransactions,
+    this.salesStats,
+    this.invoiceStatusCounts,
+    this.topCustomers,
+    this.debtSummaries,
   });
 
   factory DashboardModel.empty() {
@@ -26,10 +37,26 @@ class DashboardModel {
       totalPurchaseValue: 0.0,
       totalProfit: 0.0,
       lowStockItems: 0,
-      topSellingItems: [],
-      recentTransactions: [],
+      topSellingItems: const [],
+      recentTransactions: const [],
+      salesStats: null,
+      invoiceStatusCounts: const {},
+      topCustomers: const [],
+      debtSummaries: const [],
     );
   }
+}
+
+class DebtSummary {
+  final String status; // unpaid/partiallyPaid/paid/overdue
+  final int count;
+  final double amount;
+
+  const DebtSummary({
+    required this.status,
+    required this.count,
+    required this.amount,
+  });
 }
 
 class TopSellingItem {

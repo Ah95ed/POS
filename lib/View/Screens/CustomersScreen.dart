@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/View/style/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/CustomerProvider.dart';
 import 'package:pos/Model/SaleModel.dart' hide CustomerType;
@@ -185,6 +186,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
+                    
+                    color:WidgetStateColor.transparent,
+ 
                     label: Text(_getFilterLabel(type)),
                     selected: isSelected,
                     onSelected: (selected) {
@@ -192,7 +196,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                         _selectedFilter = type;
                       });
                     },
-                    selectedColor: Colors.green[100],
+                    selectedColor: AppColors.accent,
                     checkmarkColor: Colors.green[700],
                   ),
                 );
