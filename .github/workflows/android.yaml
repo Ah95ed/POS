@@ -33,6 +33,12 @@ jobs:
 
       - name: clean Project
         run: flutter clean
+        
+      - name: flutter update package 
+        run: flutter pub upgrade
+
+      - name: clean outdated 
+        run: flutter pub outdated
 
       - name: Install dependencies
         run: flutter pub get
