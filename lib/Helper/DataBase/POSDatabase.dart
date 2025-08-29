@@ -5,7 +5,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// قاعدة بيانات نقطة البيع الشاملة
 class POSDatabase {
-  static const version = 6;
+  static const version = 7;
   static const dbName = 'POS_System.db';
   static Database? _database;
 
@@ -20,6 +20,11 @@ class POSDatabase {
   static const String invoiceItemsTable = 'InvoiceItems';
   static const String debtsTable = 'Debts';
   static const String debtTransactionsTable = 'DebtTransactions';
+  static const String usersTable = 'Users';
+  static const String suppliersTable = 'Suppliers';
+  static const String purchasesTable = 'Purchases';
+  static const String purchaseItemsTable = 'PurchaseItems';
+  static const String reportsTable = 'Reports';
 
   // حقول جدول المنتجات (Items)
   static const String itemId = 'id';
@@ -139,6 +144,53 @@ class POSDatabase {
   static const String debtTransactionDate = 'date';
   static const String debtTransactionNotes = 'notes';
   static const String debtTransactionCreatedAt = 'created_at';
+
+  // حقول جدول المستخدمين (Users)
+  static const String userId = 'id';
+  static const String userUsername = 'username';
+  static const String userEmail = 'email';
+  static const String userPassword = 'password';
+  static const String userFullName = 'full_name';
+  static const String userPhone = 'phone';
+  static const String userRole = 'role';
+  static const String userPermissions = 'permissions';
+  static const String userIsActive = 'is_active';
+  static const String userProfileImage = 'profile_image';
+  static const String userCreatedAt = 'created_at';
+  static const String userLastLogin = 'last_login';
+
+  // حقول جدول الموردين (Suppliers)
+  static const String supplierId = 'id';
+  static const String supplierName = 'name';
+  static const String supplierCompany = 'company';
+  static const String supplierPhone = 'phone';
+  static const String supplierEmail = 'email';
+  static const String supplierAddress = 'address';
+  static const String supplierTotalPurchases = 'total_purchases';
+  static const String supplierIsActive = 'is_active';
+  static const String supplierCreatedAt = 'created_at';
+
+  // حقول جدول المشتريات (Purchases)
+  static const String purchaseId = 'id';
+  static const String purchaseSupplierId = 'supplier_id';
+  static const String purchaseInvoiceNumber = 'invoice_number';
+  static const String purchaseDate = 'date';
+  static const String purchaseSubtotal = 'subtotal';
+  static const String purchaseTax = 'tax';
+  static const String purchaseDiscount = 'discount';
+  static const String purchaseTotal = 'total';
+  static const String purchaseStatus = 'status';
+  static const String purchaseNotes = 'notes';
+  static const String purchaseCreatedAt = 'created_at';
+
+  // حقول جدول عناصر المشتريات (PurchaseItems)
+  static const String purchaseItemId = 'id';
+  static const String purchaseItemPurchaseId = 'purchase_id';
+  static const String purchaseItemProductId = 'product_id';
+  static const String purchaseItemProductName = 'product_name';
+  static const String purchaseItemQuantity = 'quantity';
+  static const String purchaseItemUnitPrice = 'unit_price';
+  static const String purchaseItemTotal = 'total';
 
   POSDatabase() {
     database;
@@ -368,6 +420,89 @@ class POSDatabase {
       'CREATE INDEX IF NOT EXISTS idx_debt_transactions_debt_id ON $debtTransactionsTable ($debtTransactionDebtId)',
     );
 
+    // جدول المستخدمين
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $usersTable (
+        $userId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $userUsername TEXT UNIQUE NOT NULL,
+        $userEmail TEXT UNIQUE NOT NULL,
+        $userPassword TEXT NOT NULL,
+        $userFullName TEXT NOT NULL,
+        $userPhone TEXT NOT NULL,
+        $userRole TEXT NOT NULL DEFAULT 'cashier',
+        $userPermissions TEXT DEFAULT '',
+        $userIsActive INTEGER DEFAULT 1,
+        $userProfileImage TEXT,
+        $userCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        $userLastLogin TEXT
+      )
+    ''');
+
+    // جدول الموردين
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $suppliersTable (
+        $supplierId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $supplierName TEXT NOT NULL,
+        $supplierCompany TEXT,
+        $supplierPhone TEXT,
+        $supplierEmail TEXT,
+        $supplierAddress TEXT,
+        $supplierTotalPurchases REAL DEFAULT 0,
+        $supplierIsActive INTEGER DEFAULT 1,
+        $supplierCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    // جدول المشتريات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $purchasesTable (
+        $purchaseId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $purchaseSupplierId INTEGER,
+        $purchaseInvoiceNumber TEXT UNIQUE NOT NULL,
+        $purchaseDate TEXT NOT NULL,
+        $purchaseSubtotal REAL NOT NULL DEFAULT 0,
+        $purchaseTax REAL DEFAULT 0,
+        $purchaseDiscount REAL DEFAULT 0,
+        $purchaseTotal REAL NOT NULL DEFAULT 0,
+        $purchaseStatus TEXT DEFAULT 'pending',
+        $purchaseNotes TEXT,
+        $purchaseCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY ($purchaseSupplierId) REFERENCES $suppliersTable ($supplierId)
+      )
+    ''');
+
+    // جدول عناصر المشتريات
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $purchaseItemsTable (
+        $purchaseItemId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $purchaseItemPurchaseId INTEGER NOT NULL,
+        $purchaseItemProductId INTEGER NOT NULL,
+        $purchaseItemProductName TEXT NOT NULL,
+        $purchaseItemQuantity INTEGER NOT NULL DEFAULT 1,
+        $purchaseItemUnitPrice REAL NOT NULL DEFAULT 0,
+        $purchaseItemTotal REAL NOT NULL DEFAULT 0,
+        FOREIGN KEY ($purchaseItemPurchaseId) REFERENCES $purchasesTable ($purchaseId) ON DELETE CASCADE,
+        FOREIGN KEY ($purchaseItemProductId) REFERENCES $itemsTable ($itemId)
+      )
+    ''');
+
+    // إنشاء فهارس لتحسين الأداء
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_users_username ON $usersTable ($userUsername)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_users_email ON $usersTable ($userEmail)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_suppliers_name ON $suppliersTable ($supplierName)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_purchases_supplier_id ON $purchasesTable ($purchaseSupplierId)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_purchase_items_purchase_id ON $purchaseItemsTable ($purchaseItemPurchaseId)',
+    );
+
     // إدراج البيانات الأولية
     await _insertInitialData(db);
   }
@@ -487,6 +622,106 @@ class POSDatabase {
         'CREATE INDEX IF NOT EXISTS idx_debt_transactions_debt_id ON $debtTransactionsTable ($debtTransactionDebtId)',
       );
     }
+
+    if (oldVersion < 7) {
+      // إضافة جداول المستخدمين والموردين والمشتريات (الإصدار 7)
+      
+      // جدول المستخدمين
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $usersTable (
+          $userId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $userUsername TEXT UNIQUE NOT NULL,
+          $userEmail TEXT UNIQUE NOT NULL,
+          $userPassword TEXT NOT NULL,
+          $userFullName TEXT NOT NULL,
+          $userPhone TEXT NOT NULL,
+          $userRole TEXT NOT NULL DEFAULT 'cashier',
+          $userPermissions TEXT DEFAULT '',
+          $userIsActive INTEGER DEFAULT 1,
+          $userProfileImage TEXT,
+          $userCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          $userLastLogin TEXT
+        )
+      ''');
+
+      // جدول الموردين
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $suppliersTable (
+          $supplierId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $supplierName TEXT NOT NULL,
+          $supplierCompany TEXT,
+          $supplierPhone TEXT,
+          $supplierEmail TEXT,
+          $supplierAddress TEXT,
+          $supplierTotalPurchases REAL DEFAULT 0,
+          $supplierIsActive INTEGER DEFAULT 1,
+          $supplierCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      // جدول المشتريات
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $purchasesTable (
+          $purchaseId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $purchaseSupplierId INTEGER,
+          $purchaseInvoiceNumber TEXT UNIQUE NOT NULL,
+          $purchaseDate TEXT NOT NULL,
+          $purchaseSubtotal REAL NOT NULL DEFAULT 0,
+          $purchaseTax REAL DEFAULT 0,
+          $purchaseDiscount REAL DEFAULT 0,
+          $purchaseTotal REAL NOT NULL DEFAULT 0,
+          $purchaseStatus TEXT DEFAULT 'pending',
+          $purchaseNotes TEXT,
+          $purchaseCreatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY ($purchaseSupplierId) REFERENCES $suppliersTable ($supplierId)
+        )
+      ''');
+
+      // جدول عناصر المشتريات
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS $purchaseItemsTable (
+          $purchaseItemId INTEGER PRIMARY KEY AUTOINCREMENT,
+          $purchaseItemPurchaseId INTEGER NOT NULL,
+          $purchaseItemProductId INTEGER NOT NULL,
+          $purchaseItemProductName TEXT NOT NULL,
+          $purchaseItemQuantity INTEGER NOT NULL DEFAULT 1,
+          $purchaseItemUnitPrice REAL NOT NULL DEFAULT 0,
+          $purchaseItemTotal REAL NOT NULL DEFAULT 0,
+          FOREIGN KEY ($purchaseItemPurchaseId) REFERENCES $purchasesTable ($purchaseId) ON DELETE CASCADE,
+          FOREIGN KEY ($purchaseItemProductId) REFERENCES $itemsTable ($itemId)
+        )
+      ''');
+
+      // إنشاء فهارس للجداول الجديدة
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_users_username ON $usersTable ($userUsername)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_users_email ON $usersTable ($userEmail)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_suppliers_name ON $suppliersTable ($supplierName)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_purchases_supplier_id ON $purchasesTable ($purchaseSupplierId)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_purchase_items_purchase_id ON $purchaseItemsTable ($purchaseItemPurchaseId)',
+      );
+
+      // إدراج المستخدم المدير الافتراضي
+      await db.insert(usersTable, {
+        userUsername: 'admin',
+        userEmail: 'admin@pos.com',
+        userPassword: 'admin123', // يجب تشفيره في التطبيق الحقيقي
+        userFullName: 'مدير النظام',
+        userPhone: '07xxxxxxxxx',
+        userRole: 'admin',
+        userPermissions: 'manage_products,manage_sales,manage_customers,manage_debts,view_reports,manage_users,manage_settings,manage_suppliers,manage_purchases',
+        userIsActive: 1,
+        userCreatedAt: DateTime.now().toIso8601String(),
+      });
+    }
   }
 
   /// إدراج البيانات الأولية
@@ -511,6 +746,57 @@ class POSDatabase {
       paymentNameAr: 'تحويل بنكي',
       paymentIsActive: 1,
       paymentIcon: 'account_balance',
+    });
+
+    // التحقق من عدم وجود مستخدم مدير بالفعل
+    final adminExists = await db.query(
+      usersTable,
+      where: '$userUsername = ?',
+      whereArgs: ['admin'],
+      limit: 1,
+    );
+
+    if (adminExists.isEmpty) {
+      // إدراج المستخدم المدير الافتراضي
+      await db.insert(usersTable, {
+        userUsername: 'admin',
+        userEmail: 'admin@pos.com',
+        userPassword: 'admin123', // يجب تشفيره في التطبيق الحقيقي
+        userFullName: 'مدير النظام',
+        userPhone: '07xxxxxxxxx',
+        userRole: 'admin',
+        userPermissions: 'manage_products,manage_sales,manage_customers,manage_debts,view_reports,manage_users,manage_settings,manage_suppliers,manage_purchases',
+        userIsActive: 1,
+        userCreatedAt: DateTime.now().toIso8601String(),
+      });
+    }
+
+    // إدراج فئات افتراضية
+    await db.insert(categoriesTable, {
+      categoryName: 'Electronics',
+      categoryNameAr: 'إلكترونيات',
+      categoryDescription: 'أجهزة إلكترونية',
+      categoryIcon: 'devices',
+      categoryColor: '#2196F3',
+      categoryIsActive: 1,
+    });
+
+    await db.insert(categoriesTable, {
+      categoryName: 'Clothing',
+      categoryNameAr: 'ملابس',
+      categoryDescription: 'ملابس وأزياء',
+      categoryIcon: 'checkroom',
+      categoryColor: '#FF5722',
+      categoryIsActive: 1,
+    });
+
+    await db.insert(categoriesTable, {
+      categoryName: 'Food',
+      categoryNameAr: 'مواد غذائية',
+      categoryDescription: 'مواد غذائية',
+      categoryIcon: 'restaurant',
+      categoryColor: '#4CAF50',
+      categoryIsActive: 1,
     });
 
     await db.insert(paymentMethodsTable, {

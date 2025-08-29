@@ -519,7 +519,7 @@ class InvoiceDetailsScreen extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${invoice.totalAmount.toStringAsFixed(2)} ر.س',
+                  '${invoice.totalAmount.toStringAsFixed(2)} د.ع',
                   style: TextStyle(
                     fontSize: context.getFontSize(18),
                     fontWeight: FontWeight.bold,

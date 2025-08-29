@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/View/style/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/CustomerProvider.dart';

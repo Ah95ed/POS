@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/View/style/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_sizer/smart_sizer.dart';
 import 'package:pos/Controller/InvoiceProvider.dart';
@@ -279,6 +280,8 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
     return FilterChip(
       label: Text(label),
       selected: isSelected,
+
+      backgroundColor: AppColors.background,
       onSelected: (selected) {
         setState(() {
           _selectedStatusFilter = status;
@@ -432,7 +435,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       context: context,
       builder: (context) => InvoiceFormDialog(
         title: 'تعديل الفاتورة',
-        
+
         invoice: invoice,
         onSave: (updatedInvoice) async {
           final provider = context.read<InvoiceProvider>();
@@ -568,7 +571,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
             Text('الفواتير المتأخرة: ${provider.overdueInvoicesCount}'),
             const Divider(),
             Text(
-              'إجمالي القيمة: ${provider.totalInvoicesAmount.toStringAsFixed(2)} ر.س',
+              'إجمالي القيمة: ${provider.totalInvoicesAmount.toStringAsFixed(2)} د.ع',
             ),
           ],
         ),

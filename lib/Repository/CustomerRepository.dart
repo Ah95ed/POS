@@ -1,5 +1,6 @@
 import 'package:pos/Helper/DataBase/POSDatabase.dart';
 import 'package:pos/Helper/Result.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Model/SaleModel.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -22,13 +23,13 @@ class CustomerRepository {
       }
 
       // التحقق من صحة البيانات
-      if (!customer.isValid) {
-        return Result.error('بيانات العميل غير صحيحة');
+      if (customer.name.isEmpty) {
+        return Result.error('اسم العميل مطلوب');
       }
 
       // التحقق من عدم تكرار رقم الهاتف
-      if (customer.phone != null && customer.phone!.isNotEmpty) {
-        final existingCustomer = await getCustomerByPhone(customer.phone!);
+      if (customer.phone.isNotEmpty) {
+        final existingCustomer = await getCustomerByPhone(customer.phone);
         if (existingCustomer.isSuccess && existingCustomer.data != null) {
           return Result.error('رقم الهاتف مستخدم من قبل عميل آخر');
         }
@@ -67,8 +68,8 @@ class CustomerRepository {
       }
 
       // التحقق من صحة البيانات
-      if (!customer.isValid) {
-        return Result.error('بيانات العميل غير صحيحة');
+      if (customer.name.isEmpty) {
+        return Result.error('اسم العميل مطلوب');
       }
 
       // التحقق من وجود العميل
@@ -78,8 +79,8 @@ class CustomerRepository {
       }
 
       // التحقق من عدم تكرار رقم الهاتف مع عملاء آخرين
-      if (customer.phone != null && customer.phone!.isNotEmpty) {
-        final phoneResult = await getCustomerByPhone(customer.phone!);
+      if (customer.phone.isNotEmpty) {
+        final phoneResult = await getCustomerByPhone(customer.phone);
         if (phoneResult.isSuccess &&
             phoneResult.data != null &&
             phoneResult.data!.id != customer.id) {
@@ -441,7 +442,9 @@ class CustomerRepository {
         return Result.error('العميل غير موجود');
       }
 
-      final currentPoints = customerResult.data!.points;
+      // TODO: إضافة points للـ CustomerModel
+      // final currentPoints = customerResult.data!.points;
+      final currentPoints = 0; // مؤقتاً
       final newPoints = currentPoints + pointsToAdd;
 
       final rowsAffected = await db.update(

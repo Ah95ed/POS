@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Repository/CustomerRepository.dart';
 import 'package:pos/Model/SaleModel.dart';
 

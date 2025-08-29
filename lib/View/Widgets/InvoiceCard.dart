@@ -129,7 +129,7 @@ class InvoiceCard extends StatelessWidget {
 
                   // المبلغ الإجمالي
                   Text(
-                    '${invoice.totalAmount.toStringAsFixed(2)} ر.س',
+                    '${invoice.totalAmount.toStringAsFixed(2)} د.ع',
                     style: TextStyle(
                       fontSize: context.getFontSize(16),
                       fontWeight: FontWeight.bold,
@@ -203,7 +203,7 @@ class InvoiceCard extends StatelessWidget {
                       icon: Icon(Icons.more_horiz, color: Colors.grey[600]),
                       onSelected: onStatusChange,
                       itemBuilder: (context) => [
-                         PopupMenuItem(
+                        PopupMenuItem(
                           value: 'pending',
                           child: Row(
                             children: [
@@ -213,7 +213,7 @@ class InvoiceCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                         PopupMenuItem(
+                        PopupMenuItem(
                           value: 'paid',
                           child: Row(
                             children: [
@@ -223,7 +223,7 @@ class InvoiceCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                         PopupMenuItem(
+                        PopupMenuItem(
                           value: 'overdue',
                           child: Row(
                             children: [
@@ -233,7 +233,7 @@ class InvoiceCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                         PopupMenuItem(
+                        PopupMenuItem(
                           value: 'cancelled',
                           child: Row(
                             children: [

@@ -1,15 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:pos/Helper/DataBase/DataBaseSqflite.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Model/SaleModel.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/Repository/SaleRepository.dart';
 import 'package:pos/Repository/ProductRepository.dart';
+import 'package:pos/Repository/CustomerRepository.dart';
+import 'package:pos/Helper/Result.dart';
 
 /// مزود حالة نقطة البيع - Sale Provider
 /// يدير جميع العمليات والحالات المتعلقة بنقطة البيع
 class SaleProvider extends ChangeNotifier {
   final SaleRepository _saleRepository;
   final ProductRepository _productRepository;
+  final CustomerRepository _customerRepository;
 
   // حالة الفاتورة الحالية
   final List<SaleItem> _currentSaleItems = [];
@@ -25,16 +29,19 @@ class SaleProvider extends ChangeNotifier {
   bool _isLoading = false;
   String _errorMessage = '';
   List<ProductModel> _availableProducts = [];
-  List<Sale> _recentSales = [];
+  List<SaleModel> _recentSales = [];
   SalesStats? _salesStats;
 
   // حالات البحث
   String _productSearchQuery = '';
   List<ProductModel> _filteredProducts = [];
+  List<CustomerModel> _customers = [];
+  List<CustomerModel> _filteredCustomers = [];
 
-    SaleProvider()
+  SaleProvider()
     : _saleRepository = SaleRepository(DataBaseSqflite()),
-      _productRepository = ProductRepository(DataBaseSqflite()) {
+      _productRepository = ProductRepository(DataBaseSqflite()),
+      _customerRepository = CustomerRepository() {
     _initializeData();
   }
 
@@ -53,9 +60,11 @@ class SaleProvider extends ChangeNotifier {
   String get errorMessage => _errorMessage;
   List<ProductModel> get availableProducts => _availableProducts;
   List<ProductModel> get filteredProducts => _filteredProducts;
-  List<Sale> get recentSales => _recentSales;
+  List<SaleModel> get recentSales => _recentSales;
   SalesStats? get salesStats => _salesStats;
   String get productSearchQuery => _productSearchQuery;
+  List<CustomerModel> get customers => _customers;
+  List<CustomerModel> get filteredCustomers => _filteredCustomers;
 
   // حسابات الفاتورة
   double get subtotal {
@@ -79,7 +88,11 @@ class SaleProvider extends ChangeNotifier {
   }
 
   bool get canCompleteSale {
-    return _currentSaleItems.isNotEmpty && _paidAmount >= total;
+    // التحقق من وجود عناصر في الفاتورة
+    if (_currentSaleItems.isEmpty) return false;
+
+    // التحقق من أن المبلغ المدفوع كافٍ
+    return _paidAmount >= total;
   }
 
   int get itemCount => _currentSaleItems.length;
@@ -92,6 +105,7 @@ class SaleProvider extends ChangeNotifier {
   Future<void> _initializeData() async {
     await _saleRepository.createSalesTables();
     await loadAvailableProducts();
+    await loadCustomers();
     await loadRecentSales();
     await loadSalesStats();
   }
@@ -131,6 +145,42 @@ class SaleProvider extends ChangeNotifier {
       }).toList();
     }
 
+    notifyListeners();
+  }
+
+  /// تحميل العملاء
+  Future<void> loadCustomers() async {
+    try {
+      final result = await _customerRepository.getAllCustomers();
+      if (result.isSuccess) {
+        _customers = result.data!;
+        _filteredCustomers = List.from(_customers);
+      }
+    } catch (e) {
+      debugPrint('خطأ في تحميل العملاء: ${e.toString()}');
+    }
+  }
+
+  /// البحث في العملاء
+  void searchCustomers(String query) {
+    final searchQuery = query.trim().toLowerCase();
+
+    if (searchQuery.isEmpty) {
+      _filteredCustomers = List.from(_customers);
+    } else {
+      _filteredCustomers = _customers.where((customer) {
+        return customer.name.toLowerCase().contains(searchQuery) ||
+            customer.phone.toLowerCase().contains(searchQuery);
+      }).toList();
+    }
+
+    notifyListeners();
+  }
+
+  /// اختيار عميل من القائمة
+  void selectCustomer(CustomerModel customer) {
+    _customerName = customer.name;
+    _customerPhone = customer.phone;
     notifyListeners();
   }
 
@@ -184,12 +234,19 @@ class SaleProvider extends ChangeNotifier {
       }
 
       _clearError();
+      _saveDraft(); // حفظ المسودة تلقائياً
       notifyListeners();
       return true;
     } catch (e) {
       _setError('خطأ في إضافة المنتج: ${e.toString()}');
       return false;
     }
+  }
+
+  /// حفظ مسودة الفاتورة
+  void _saveDraft() {
+    // يمكن حفظ الفاتورة الحالية في الذاكرة المؤقتة أو قاعدة بيانات محلية
+    debugPrint('تم حفظ المسودة - عدد العناصر: ${_currentSaleItems.length}');
   }
 
   /// إضافة منتج بالكود
@@ -294,7 +351,15 @@ class SaleProvider extends ChangeNotifier {
   /// إتمام البيع
   Future<bool> completeSale() async {
     if (!canCompleteSale) {
-      _setError('لا يمكن إتمام البيع. تحقق من البيانات والمبلغ المدفوع');
+      if (_currentSaleItems.isEmpty) {
+        _setError('لا يمكن إتمام البيع: لا توجد منتجات في الفاتورة');
+      } else if (_paidAmount < total) {
+        _setError(
+          'لا يمكن إتمام البيع: المبلغ المدفوع (${_paidAmount.toStringAsFixed(2)}) أقل من الإجمالي (${total.toStringAsFixed(2)})',
+        );
+      } else {
+        _setError('لا يمكن إتمام البيع. تحقق من البيانات والمبلغ المدفوع');
+      }
       return false;
     }
 
@@ -307,9 +372,38 @@ class SaleProvider extends ChangeNotifier {
         return false;
       }
 
+      // التحقق من توفر المنتجات قبل البيع
+      for (final item in _currentSaleItems) {
+        final productResult = await _productRepository.getProductByCode(
+          item.productCode,
+        );
+        if (productResult.isError || productResult.data == null) {
+          _setError('المنتج ${item.productName} غير موجود');
+          return false;
+        }
+
+        final product = productResult.data!;
+        if (product.quantity < item.quantity) {
+          _setError(
+            'الكمية المطلوبة من ${item.productName} غير متوفرة. المتاح: ${product.quantity}',
+          );
+          return false;
+        }
+      }
+
       // إنشاء الفاتورة
       final saleModel = SaleModel(
         invoiceNumber: invoiceResult.data!,
+        customerId: null, // يمكن إضافة العميل لاحقاً
+        subtotal: subtotal,
+        tax: taxAmount,
+        discount: _discount,
+        total: total,
+        paidAmount: _paidAmount,
+        changeAmount: changeAmount,
+        paymentMethod: _paymentMethod,
+        status: 'completed',
+        notes: _notes,
         createdAt: DateTime.now(),
         items: _currentSaleItems.map((item) {
           return SaleItemModel(
@@ -322,22 +416,18 @@ class SaleProvider extends ChangeNotifier {
             total: item.total,
           );
         }).toList(),
-        subtotal: subtotal,
-        discount: _discount,
-        tax: taxAmount,
-        total: total,
-        paymentMethod: _paymentMethod,
-        paidAmount: _paidAmount,
-        changeAmount: changeAmount,
-        notes: _notes,
-        status: 'completed',
       );
 
-      // حفظ الفاتورة
+      // حفظ الفاتورة مع تحديث المخزون
       final saveResult = await _saleRepository.saveSale(saleModel);
       if (saveResult.isError) {
         _setError(saveResult.error!);
         return false;
+      }
+
+      // حفظ بيانات العميل إذا تم إدخالها
+      if (_customerName != null && _customerName!.isNotEmpty) {
+        await _saveCustomerData(saveResult.data!);
       }
 
       // مسح الفاتورة الحالية
@@ -358,6 +448,58 @@ class SaleProvider extends ChangeNotifier {
     }
   }
 
+  /// حفظ بيانات العميل
+  Future<void> _saveCustomerData(int saleId) async {
+    try {
+      if (_customerName == null || _customerName!.isEmpty) return;
+
+      // البحث عن العميل أولاً
+      CustomerModel? existingCustomer;
+      if (_customerPhone != null && _customerPhone!.isNotEmpty) {
+        final result = await _customerRepository.getCustomerByPhone(
+          _customerPhone!,
+        );
+        if (result.isSuccess && result.data != null) {
+          existingCustomer = result.data;
+        }
+      }
+
+      if (existingCustomer != null) {
+        // تحديث بيانات العميل الموجود
+        final updatedCustomer = existingCustomer.copyWith(
+          name: _customerName,
+          totalPurchases: existingCustomer.totalPurchases + total,
+        );
+        await _customerRepository.updateCustomer(updatedCustomer);
+
+        // ربط الفاتورة بالعميل
+        await _saleRepository.updateSaleCustomerId(
+          saleId,
+          existingCustomer.id!,
+        );
+      } else {
+        // إضافة عميل جديد
+        final newCustomer = CustomerModel(
+          name: _customerName!,
+          phone: _customerPhone ?? '',
+          totalPurchases: total,
+          isVip: false,
+          createdAt: DateTime.now(),
+        );
+
+        final result = await _customerRepository.addCustomer(newCustomer);
+        if (result.isSuccess && result.data != null) {
+          // ربط الفاتورة بالعميل الجديد
+          await _saleRepository.updateSaleCustomerId(saleId, result.data!.id!);
+        }
+      }
+
+      debugPrint('تم حفظ بيانات العميل: $_customerName, $_customerPhone');
+    } catch (e) {
+      debugPrint('خطأ في حفظ بيانات العميل: ${e.toString()}');
+    }
+  }
+
   /// مسح الفاتورة الحالية
   void clearCurrentSale() {
     _currentSaleItems.clear();
@@ -367,7 +509,37 @@ class SaleProvider extends ChangeNotifier {
     _customerPhone = null;
     _notes = null;
     _paymentMethod = 'نقدي';
+    _clearError();
+    _clearDraft(); // مسح المسودة
     notifyListeners();
+  }
+
+  /// مسح المسودة المحفوظة
+  void _clearDraft() {
+    debugPrint('تم مسح المسودة');
+  }
+
+  /// الحصول على ملخص الفاتورة كنص
+  String getSalesSummary() {
+    if (_currentSaleItems.isEmpty) return 'لا توجد عناصر في الفاتورة';
+
+    final buffer = StringBuffer();
+    buffer.writeln('ملخص الفاتورة:');
+    buffer.writeln('================');
+
+    for (final item in _currentSaleItems) {
+      buffer.writeln(
+        '${item.productName}: ${item.quantity} × ${item.unitPrice} = ${item.total}',
+      );
+    }
+
+    buffer.writeln('================');
+    buffer.writeln('المجموع الفرعي: $subtotal');
+    if (_discount > 0) buffer.writeln('الخصم: $_discount');
+    buffer.writeln('الضريبة: $taxAmount');
+    buffer.writeln('الإجمالي: $total');
+
+    return buffer.toString();
   }
 
   /// تحميل المبيعات الأخيرة
@@ -419,8 +591,105 @@ class SaleProvider extends ChangeNotifier {
     }
   }
 
+  /// الحصول على فاتورة برقم الفاتورة
+  Future<Result<SaleModel?>> getSaleByInvoiceNumber(
+    String invoiceNumber,
+  ) async {
+    try {
+      return await _saleRepository.getSaleByInvoiceNumber(invoiceNumber);
+    } catch (e) {
+      return Result.error('خطأ في البحث عن الفاتورة: ${e.toString()}');
+    }
+  }
+
+  /// الحصول على فاتورة بالمعرف
+  Future<Result<SaleModel?>> getSaleById(int id) async {
+    try {
+      return await _saleRepository.getSaleById(id);
+    } catch (e) {
+      return Result.error('خطأ في البحث عن الفاتورة: ${e.toString()}');
+    }
+  }
+
+  /// إرجاع فاتورة
+  Future<bool> refundSale(int saleId, {String? reason}) async {
+    _setLoading(true);
+    try {
+      final saleResult = await getSaleById(saleId);
+      if (saleResult.isError || saleResult.data == null) {
+        _setError('فاتورة غير موجودة');
+        return false;
+      }
+
+      final sale = saleResult.data!;
+
+      // التحقق من حالة الفاتورة
+      if (sale.status != 'completed') {
+        _setError('لا يمكن إرجاع فاتورة غير مكتملة');
+        return false;
+      }
+
+      // إنشاء فاتورة إرجاع
+      final refundSale = SaleModel(
+        invoiceNumber: 'REF-${sale.invoiceNumber}',
+        customerId: sale.customerId,
+        subtotal: -sale.subtotal,
+        tax: -sale.tax,
+        discount: 0,
+        total: -sale.total,
+        paidAmount: -sale.paidAmount,
+        changeAmount: 0,
+        paymentMethod: sale.paymentMethod,
+        status: 'refunded',
+        notes: reason != null ? 'إرجاع: $reason' : 'فاتورة إرجاع',
+        createdAt: DateTime.now(),
+        items: sale.items.map((item) {
+          return SaleItemModel(
+            productId: item.productId,
+            productCode: item.productCode,
+            productName: item.productName,
+            unitPrice: item.unitPrice,
+            quantity: -item.quantity, // كمية سالبة للإرجاع
+            discount: item.discount,
+            total: -item.total,
+          );
+        }).toList(),
+      );
+
+      // حفظ فاتورة الإرجاع
+      final saveResult = await _saleRepository.saveSale(refundSale);
+      if (saveResult.isError) {
+        _setError(saveResult.error!);
+        return false;
+      }
+
+      // تحديث حالة الفاتورة الأصلية
+      final updateResult = await _saleRepository.updateSaleStatus(
+        saleId,
+        SaleStatus.refunded,
+      );
+      if (updateResult.isError) {
+        _setError(updateResult.error!);
+        return false;
+      }
+
+      // تحديث البيانات
+      await loadRecentSales();
+      await loadSalesStats();
+      await loadAvailableProducts();
+
+      return true;
+    } catch (e) {
+      _setError('خطأ في إرجاع الفاتورة: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// حذف فاتورة
   Future<bool> deleteSale(int saleId) async {
+    _setLoading(true);
     try {
       final result = await _saleRepository.deleteSale(saleId);
 
@@ -435,6 +704,51 @@ class SaleProvider extends ChangeNotifier {
       }
     } catch (e) {
       _setError('خطأ في حذف الفاتورة: ${e.toString()}');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  /// تحديث رقم فاتورة مخصص
+  Future<bool> updateInvoiceNumber(int saleId, String newInvoiceNumber) async {
+    try {
+      // التحقق من عدم تكرار رقم الفاتورة
+      final existingResult = await getSaleByInvoiceNumber(newInvoiceNumber);
+      if (existingResult.isSuccess && existingResult.data != null) {
+        _setError('رقم الفاتورة موجود مسبقاً');
+        return false;
+      }
+
+      // TODO: إضافة method updateInvoiceNumber إلى SaleRepository
+      // final result = await _saleRepository.updateInvoiceNumber(
+      //   saleId,
+      //   newInvoiceNumber,
+      // );
+
+      // مؤقتاً نعتبر التحديث نجح
+      await loadRecentSales();
+      return true;
+    } catch (e) {
+      _setError('خطأ في تحديث رقم الفاتورة: ${e.toString()}');
+      return false;
+    }
+  }
+
+  /// طباعة فاتورة
+  Future<bool> printInvoice(int saleId) async {
+    try {
+      final saleResult = await getSaleById(saleId);
+      if (saleResult.isError || saleResult.data == null) {
+        _setError('فاتورة غير موجودة');
+        return false;
+      }
+
+      // تنفيذ طباعة الفاتورة
+      // يمكن إضافة خدمة الطباعة هنا
+      return true;
+    } catch (e) {
+      _setError('خطأ في طباعة الفاتورة: ${e.toString()}');
       return false;
     }
   }

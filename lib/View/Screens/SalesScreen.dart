@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/SaleProvider.dart';
-import 'package:pos/Model/SaleModel.dart';
 import 'package:pos/Model/ProductModel.dart';
-import 'package:pos/View/Widgets/SaleItemCard.dart';
-import 'package:pos/View/Widgets/ProductSelectionDialog.dart';
-import 'package:pos/View/Widgets/PaymentDialog.dart';
-import 'package:pos/Helper/Service/PrintService.dart';
-import 'package:pos/Helper/Service/RefundService.dart';
-import 'package:smart_sizer/smart_sizer.dart';
-import 'package:pos/Helper/Constants/AppConstants.dart';
 
 /// شاشة نقطة البيع الرئيسية
 class SalesScreen extends StatefulWidget {
@@ -47,7 +38,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: DeviceUtils.isMobile(context) ? null : buildAppBar(),
+      appBar: buildAppBar(),
       body: Consumer<SaleProvider>(
         builder: (context, saleProvider, child) {
           if (saleProvider.isLoading && saleProvider.currentSaleItems.isEmpty) {
@@ -74,6 +65,12 @@ class _SalesScreenState extends State<SalesScreen> {
       elevation: 0,
       automaticallyImplyLeading: false,
       actions: [
+        // زر إدارة الفواتير
+        IconButton(
+          icon: const Icon(Icons.receipt_long, color: Colors.white),
+          onPressed: () => _showInvoiceControlDialog(),
+          tooltip: 'إدارة الفواتير',
+        ),
         Consumer<SaleProvider>(
           builder: (context, provider, child) {
             return IconButton(
@@ -85,115 +82,49 @@ class _SalesScreenState extends State<SalesScreen> {
             );
           },
         ),
-        IconButton(
-          icon: const Icon(Icons.print, color: Colors.white),
-          onPressed: _showPrintOptions,
-          tooltip: 'طباعة',
-        ),
-        IconButton(
-          icon: const Icon(Icons.assignment_return, color: Colors.white),
-          onPressed: _showRefundDialog,
-          tooltip: 'إرجاع',
-        ),
-        IconButton(
-          icon: const Icon(Icons.history, color: Colors.white),
-          onPressed: _showSalesHistory,
-          tooltip: 'السجل',
-        ),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: Colors.white),
-          onSelected: (value) {
-            switch (value) {
-              case 'settings':
-                _showSettings();
-                break;
-              case 'reports':
-                _showReports();
-                break;
-              case 'backup':
-                _showBackupOptions();
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'settings',
-              child: Row(
-                children: [
-                  Icon(Icons.settings),
-                  SizedBox(width: 8),
-                  Text('الإعدادات'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'reports',
-              child: Row(
-                children: [
-                  Icon(Icons.analytics),
-                  SizedBox(width: 8),
-                  Text('التقارير'),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'backup',
-              child: Row(
-                children: [
-                  Icon(Icons.backup),
-                  SizedBox(width: 8),
-                  Text('النسخ الاحتياطي'),
-                ],
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
 
-  /// تخطيط الشاشات الكبيرة
+  /// بناء تخطيط الشاشة العريضة
   Widget _buildWideScreenLayout(
     SaleProvider provider,
-    double screenWidth,
-    double screenHeight,
+    double width,
+    double height,
   ) {
     return Row(
       children: [
-        // الجانب الأيسر - اختيار المنتجات
+        // قسم اختيار المنتجات
+        Expanded(flex: 3, child: _buildProductSelection(provider, width * 0.6)),
+
+        // قسم الفاتورة الحالية
         Expanded(
           flex: 2,
-          child: _buildProductSelection(provider, screenWidth * 0.6),
-        ),
-
-        // الجانب الأيمن - الفاتورة والدفع
-        Expanded(
-          flex: 1,
-          child: _buildInvoicePanel(provider, screenWidth * 0.4, screenHeight),
+          child: _buildCurrentSaleSection(provider, width * 0.4),
         ),
       ],
     );
   }
 
-  /// تخطيط الشاشات الصغيرة
+  /// بناء تخطيط الشاشة المحمولة
   Widget _buildMobileLayout(
     SaleProvider provider,
-    double screenWidth,
-    double screenHeight,
+    double width,
+    double height,
   ) {
     return Column(
       children: [
         // شريط البحث والباركود
-        _buildSearchBar(provider, screenWidth),
+        _buildSearchBar(provider, width),
 
         // قائمة المنتجات في الفاتورة
-        Expanded(flex: 2, child: _buildCurrentSaleItems(provider, screenWidth)),
+        Expanded(flex: 2, child: _buildCurrentSaleItems(provider, width)),
 
         // ملخص الفاتورة
-        _buildInvoiceSummary(provider, screenWidth),
+        _buildInvoiceSummary(provider, width),
 
         // أزرار العمليات
-        _buildActionButtons(provider, screenWidth),
+        _buildActionButtons(provider, width),
       ],
     );
   }
@@ -274,17 +205,20 @@ class _SalesScreenState extends State<SalesScreen> {
   /// بناء شبكة المنتجات
   Widget _buildProductGrid(SaleProvider provider, double width) {
     if (provider.filteredProducts.isEmpty) {
-      return _buildEmptyProductsState();
+      return const Center(
+        child: Text(
+          'لا توجد منتجات متاحة',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
     }
-
-    final crossAxisCount = (width / 200).floor().clamp(2, 6);
 
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
+        crossAxisCount: width > 1200 ? 4 : (width > 800 ? 3 : 2),
         childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
       ),
       itemCount: provider.filteredProducts.length,
       itemBuilder: (context, index) {
@@ -298,145 +232,124 @@ class _SalesScreenState extends State<SalesScreen> {
   Widget _buildProductCard(ProductModel product, SaleProvider provider) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => provider.addProductToSale(product),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // اسم المنتج
-              Expanded(
-                child: Text(
-                  product.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
+                child: Icon(Icons.inventory, size: 40, color: Colors.grey[600]),
               ),
-
-              const SizedBox(height: 8),
-
-              // السعر والكمية
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    AppConstants.formatCurrency(product.salePrice),
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green[700],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: product.isLowStock
-                          ? Colors.orange[100]
-                          : Colors.green[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '${product.quantity}',
-                      style: TextStyle(
-                        fontSize: 12,
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: product.isLowStock
-                            ? Colors.orange[700]
-                            : Colors.green[700],
+                        fontSize: 12,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${product.salePrice.toStringAsFixed(2)} دينار',
+                      style: TextStyle(
+                        color: Colors.green[700],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
-                  ),
-                ],
+                    Text(
+                      'متوفر: ${product.quantity}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 10),
+                    ),
+                  ],
+                ),
               ),
-
-              const SizedBox(height: 8),
-
-              // كود المنتج
-              Text(
-                product.code,
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// بناء حالة المنتجات الفارغة
-  Widget _buildEmptyProductsState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'لا توجد منتجات متاحة',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'تأكد من وجود منتجات في المخزون',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+  /// بناء قسم الفاتورة الحالية
+  Widget _buildCurrentSaleSection(SaleProvider provider, double width) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(-2, 0),
           ),
         ],
       ),
-    );
-  }
-
-  /// بناء لوحة الفاتورة
-  Widget _buildInvoicePanel(
-    SaleProvider provider,
-    double width,
-    double height,
-  ) {
-    return Container(
-      color: Colors.white,
       child: Column(
         children: [
-          // عنوان الفاتورة
+          // رأس القسم
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.green[700],
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              ),
+              color: Colors.blue[700],
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               children: [
-                const Icon(Icons.receipt, color: Colors.white),
+                const Icon(Icons.shopping_cart, color: Colors.white),
                 const SizedBox(width: 8),
-                const Text(
-                  'الفاتورة الحالية',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                const Expanded(
+                  child: Text(
+                    'الفاتورة الحالية',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  '${provider.itemCount} صنف',
-                  style: const TextStyle(color: Colors.white),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${provider.itemCount} عنصر',
+                    style: const TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
           ),
 
-          // قائمة المنتجات في الفاتورة
+          // قائمة العناصر
           Expanded(child: _buildCurrentSaleItems(provider, width)),
 
           // ملخص الفاتورة
@@ -449,52 +362,91 @@ class _SalesScreenState extends State<SalesScreen> {
     );
   }
 
-  /// بناء قائمة المنتجات في الفاتورة الحالية
+  /// بناء قائمة عناصر الفاتورة الحالية
   Widget _buildCurrentSaleItems(SaleProvider provider, double width) {
     if (provider.currentSaleItems.isEmpty) {
-      return _buildEmptySaleState();
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'لا توجد عناصر في الفاتورة',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'ابدأ بإضافة منتجات',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       itemCount: provider.currentSaleItems.length,
       itemBuilder: (context, index) {
         final item = provider.currentSaleItems[index];
-        return SaleItemCard(
-          item: item,
-          onQuantityChanged: (quantity) {
-            provider.updateItemQuantity(index, quantity);
-          },
-          onDiscountApplied: (discount) {
-            provider.applyItemDiscount(index, discount);
-          },
-          onRemove: () {
-            provider.removeItemFromSale(index);
-          },
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Colors.blue[100],
+              child: Icon(Icons.inventory, color: Colors.blue[700]),
+            ),
+            title: Text(
+              item.productName,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              'السعر: ${item.unitPrice.toStringAsFixed(2)} دينار',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: () {
+                    if (item.quantity > 1) {
+                      provider.updateItemQuantity(index, item.quantity - 1);
+                    } else {
+                      provider.removeItemFromSale(index);
+                    }
+                  },
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${item.quantity}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed: () {
+                    provider.updateItemQuantity(index, item.quantity + 1);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => provider.removeItemFromSale(index),
+                ),
+              ],
+            ),
+          ),
         );
       },
-    );
-  }
-
-  /// بناء حالة الفاتورة الفارغة
-  Widget _buildEmptySaleState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'الفاتورة فارغة',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'ابدأ بإضافة منتجات للفاتورة',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-          ),
-        ],
-      ),
     );
   }
 
@@ -510,36 +462,24 @@ class _SalesScreenState extends State<SalesScreen> {
         children: [
           _buildSummaryRow(
             'المجموع الفرعي:',
-            AppConstants.formatCurrency(provider.subtotal),
+            '${provider.subtotal.toStringAsFixed(2)} دينار',
           ),
           if (provider.discount > 0)
             _buildSummaryRow(
               'الخصم:',
-              '-${AppConstants.formatCurrency(provider.discount)}',
+              '- ${provider.discount.toStringAsFixed(2)} دينار',
               color: Colors.red[700],
             ),
           _buildSummaryRow(
             'الضريبة (${provider.taxRate.toStringAsFixed(0)}%):',
-            AppConstants.formatCurrency(provider.taxAmount),
+            '${provider.taxAmount.toStringAsFixed(2)} دينار',
           ),
           const Divider(thickness: 2),
           _buildSummaryRow(
             'الإجمالي:',
-            AppConstants.formatCurrency(provider.total),
+            '${provider.total.toStringAsFixed(2)} دينار',
             isTotal: true,
           ),
-          if (provider.paidAmount > 0) ...[
-            _buildSummaryRow(
-              'المدفوع:',
-              AppConstants.formatCurrency(provider.paidAmount),
-            ),
-            if (provider.changeAmount > 0)
-              _buildSummaryRow(
-                'الباقي:',
-                AppConstants.formatCurrency(provider.changeAmount),
-                color: Colors.green[700],
-              ),
-          ],
         ],
       ),
     );
@@ -630,7 +570,7 @@ class _SalesScreenState extends State<SalesScreen> {
                   : null,
               icon: const Icon(Icons.payment, size: 24),
               label: Text(
-                'دفع (${AppConstants.formatCurrency(provider.total)})',
+                'دفع (${provider.total.toStringAsFixed(2)} دينار)',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -668,14 +608,8 @@ class _SalesScreenState extends State<SalesScreen> {
 
   /// عرض نافذة اختيار المنتجات
   void _showProductSelectionDialog(SaleProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) => ProductSelectionDialog(
-        products: provider.filteredProducts,
-        onProductSelected: (product) {
-          provider.addProductToSale(product);
-        },
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('نافذة اختيار المنتجات قيد التطوير')),
     );
   }
 
@@ -695,44 +629,118 @@ class _SalesScreenState extends State<SalesScreen> {
 
   /// عرض نافذة الدفع
   void _showPaymentDialog(SaleProvider provider) {
+    final TextEditingController paidAmountController = TextEditingController();
+    // تعيين المبلغ الافتراضي للإجمالي
+    paidAmountController.text = provider.total.toStringAsFixed(2);
+    // تحديث المبلغ المدفوع فوراً
+    provider.updatePaidAmount(provider.total);
+
     showDialog(
       context: context,
-      builder: (context) => PaymentDialog(
-        total: provider.total,
-        onPaymentCompleted:
-            (paymentMethod, paidAmount, customerName, customerPhone) {
-              provider.updatePaymentMethod(paymentMethod);
-              provider.updatePaidAmount(paidAmount);
-              provider.updateCustomerInfo(
-                name: customerName,
-                phone: customerPhone,
+      builder: (context) => AlertDialog(
+        title: const Text('إتمام الدفع'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'المبلغ الإجمالي: ${provider.total.toStringAsFixed(2)} دينار',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: paidAmountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'المبلغ المدفوع',
+                suffixText: 'دينار',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                final amount = double.tryParse(value) ?? 0.0;
+                provider.updatePaidAmount(amount);
+              },
+            ),
+            const SizedBox(height: 8),
+            Consumer<SaleProvider>(
+              builder: (context, provider, child) {
+                final change = provider.changeAmount;
+                return Text(
+                  change > 0
+                      ? 'المبلغ المتبقي: ${change.toStringAsFixed(2)} دينار'
+                      : change < 0
+                      ? 'نقص في المبلغ: ${(-change).toStringAsFixed(2)} دينار'
+                      : 'المبلغ مطابق',
+                  style: TextStyle(
+                    color: change >= 0 ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('إلغاء'),
+          ),
+          Consumer<SaleProvider>(
+            builder: (context, provider, child) {
+              return ElevatedButton(
+                onPressed: provider.canCompleteSale
+                    ? () {
+                        provider.completeSale().then((success) {
+                          Navigator.of(context).pop();
+                          if (success) {
+                            _showSuccessSnackBar('تم إتمام البيع بنجاح');
+                          } else {
+                            _showErrorSnackBar(provider.errorMessage);
+                          }
+                        });
+                      }
+                    : null,
+                child: const Text('دفع'),
               );
-
-              provider.completeSale().then((success) {
-                if (success) {
-                  _showSuccessSnackBar('تم إتمام البيع بنجاح');
-                } else {
-                  _showErrorSnackBar(provider.errorMessage);
-                }
-              });
             },
+          ),
+        ],
+      ),
+    ).then((_) {
+      // تنظيف المبلغ المدفوع عند إغلاق النافذة
+      paidAmountController.dispose();
+    });
+  }
+
+  /// عرض ملخص سريع للعربة
+  void _showCartSummary(SaleProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'ملخص الفاتورة',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildSummaryRow('العناصر:', '${provider.itemCount}'),
+            _buildSummaryRow(
+              'المجموع:',
+              '${provider.total.toStringAsFixed(2)} دينار',
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// عرض ملخص السلة
-  void _showCartSummary(SaleProvider provider) {
-    // يمكن إضافة نافذة ملخص السلة هنا
-  }
-
-  /// عرض تاريخ المبيعات
-  void _showSalesHistory() {
-    // يمكن إضافة شاشة تاريخ المبيعات هنا
-  }
-
-  /// عرض الإعدادات
-  void _showSettings() {
-    // يمكن إضافة شاشة إعدادات نقطة البيع هنا
+  /// عرض نافذة إدارة الفواتير
+  void _showInvoiceControlDialog() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('نافذة إدارة الفواتير قيد التطوير')),
+    );
   }
 
   /// عرض رسالة خطأ
@@ -749,357 +757,6 @@ class _SalesScreenState extends State<SalesScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
-  }
-
-  /// عرض خيارات الطباعة
-  void _showPrintOptions() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'خيارات الطباعة',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              leading: const Icon(Icons.receipt_long),
-              title: const Text('طباعة آخر فاتورة'),
-              onTap: () {
-                Navigator.pop(context);
-                _printLastInvoice();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.search),
-              title: const Text('طباعة فاتورة برقم'),
-              onTap: () {
-                Navigator.pop(context);
-                _showPrintByNumberDialog();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.print),
-              title: const Text('إعادة طباعة إيصال حراري'),
-              onTap: () {
-                Navigator.pop(context);
-                _printThermalReceipt();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// طباعة آخر فاتورة
-  void _printLastInvoice() async {
-    try {
-      final provider = context.read<SaleProvider>();
-      if (provider.recentSales.isNotEmpty) {
-        final lastSale = provider.recentSales.first;
-        await PrintService.printSaleInvoice(lastSale);
-        _showSuccessSnackBar('تم طباعة الفاتورة بنجاح');
-      } else {
-        _showErrorSnackBar('لا توجد فواتير للطباعة');
-      }
-    } catch (e) {
-      _showErrorSnackBar('خطأ في الطباعة: ${e.toString()}');
-    }
-  }
-
-  /// عرض نافذة طباعة برقم الفاتورة
-  void _showPrintByNumberDialog() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('طباعة فاتورة'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'رقم الفاتورة',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _printInvoiceByNumber(controller.text);
-            },
-            child: const Text('طباعة'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// طباعة فاتورة برقم
-  void _printInvoiceByNumber(String invoiceNumber) async {
-    if (invoiceNumber.isEmpty) {
-      _showErrorSnackBar('يرجى إدخال رقم الفاتورة');
-      return;
-    }
-
-    try {
-      final provider = context.read<SaleProvider>();
-      final sales = await provider.searchSales(invoiceNumber: invoiceNumber);
-
-      if (sales.isNotEmpty) {
-        await PrintService.printSaleInvoice(sales.first);
-        _showSuccessSnackBar('تم طباعة الفاتورة بنجاح');
-      } else {
-        _showErrorSnackBar('لم يتم العثور على الفاتورة');
-      }
-    } catch (e) {
-      _showErrorSnackBar('خطأ في الطباعة: ${e.toString()}');
-    }
-  }
-
-  /// طباعة إيصال حراري
-  void _printThermalReceipt() async {
-    try {
-      final provider = context.read<SaleProvider>();
-      if (provider.recentSales.isNotEmpty) {
-        final lastSale = provider.recentSales.first;
-        await PrintService.printThermalReceipt(lastSale);
-        _showSuccessSnackBar('تم طباعة الإيصال بنجاح');
-      } else {
-        _showErrorSnackBar('لا توجد فواتير للطباعة');
-      }
-    } catch (e) {
-      _showErrorSnackBar('خطأ في الطباعة: ${e.toString()}');
-    }
-  }
-
-  /// عرض نافذة الإرجاع
-  void _showRefundDialog() {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('إرجاع فاتورة'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'رقم الفاتورة',
-                border: OutlineInputBorder(),
-                hintText: 'أدخل رقم الفاتورة للإرجاع',
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'يمكن إرجاع الفواتير خلال 30 يوماً من تاريخ الشراء',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _processRefund(controller.text);
-            },
-            child: const Text('بحث'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// معالجة الإرجاع
-  void _processRefund(String invoiceNumber) async {
-    if (invoiceNumber.isEmpty) {
-      _showErrorSnackBar('يرجى إدخال رقم الفاتورة');
-      return;
-    }
-
-    try {
-      final refundService = RefundService();
-      final result = await refundService.searchInvoiceForRefund(invoiceNumber);
-
-      if (!result.found) {
-        _showErrorSnackBar(result.message);
-        return;
-      }
-
-      final sale = result.sale!;
-      if (!result.canRefund) {
-        _showErrorSnackBar(result.message);
-        return;
-      }
-
-      _showRefundOptionsDialog(sale);
-    } catch (e) {
-      _showErrorSnackBar('خطأ في البحث: ${e.toString()}');
-    }
-  }
-
-  /// عرض خيارات الإرجاع
-  void _showRefundOptionsDialog(Sale sale) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('إرجاع الفاتورة ${sale.invoiceNumber}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('التاريخ: ${_formatDate(sale.date)}'),
-            Text('الإجمالي: ${AppConstants.formatCurrency(sale.total)}'),
-            if (sale.customerName != null) Text('العميل: ${sale.customerName}'),
-            const SizedBox(height: 16),
-            const Text('نوع الإرجاع:'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showFullRefundDialog(sale);
-            },
-            child: const Text('إرجاع كامل'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _showPartialRefundDialog(sale);
-            },
-            child: const Text('إرجاع جزئي'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// عرض نافذة الإرجاع الكامل
-  void _showFullRefundDialog(Sale sale) {
-    final reasonController = TextEditingController();
-    String selectedReason = RefundReasons.all.first;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('إرجاع كامل'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: selectedReason,
-                decoration: const InputDecoration(
-                  labelText: 'سبب الإرجاع',
-                  border: OutlineInputBorder(),
-                ),
-                items: RefundReasons.all.map((reason) {
-                  return DropdownMenuItem(value: reason, child: Text(reason));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    selectedReason = value!;
-                  });
-                },
-              ),
-              if (selectedReason == RefundReasons.other) ...[
-                const SizedBox(height: 16),
-                TextField(
-                  controller: reasonController,
-                  decoration: const InputDecoration(
-                    labelText: 'تفاصيل السبب',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('إلغاء'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                final reason = selectedReason == RefundReasons.other
-                    ? reasonController.text
-                    : selectedReason;
-                _executeFullRefund(sale, reason);
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('تأكيد الإرجاع'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// تنفيذ الإرجاع الكامل
-  void _executeFullRefund(Sale sale, String reason) async {
-    try {
-      final refundService = RefundService();
-      final result = await refundService.refundFullInvoice(
-        sale.invoiceNumber,
-        reason,
-      );
-
-      if (result.isSuccess) {
-        _showSuccessSnackBar(result.message);
-        // طباعة فاتورة الإرجاع
-        if (result.refundSale != null) {
-          await PrintService.printSaleInvoice(result.refundSale!);
-        }
-        // تحديث البيانات
-        if (mounted) {
-          context.read<SaleProvider>().loadRecentSales();
-        }
-      } else {
-        _showErrorSnackBar(result.message);
-      }
-    } catch (e) {
-      _showErrorSnackBar('خطأ في الإرجاع: ${e.toString()}');
-    }
-  }
-
-  /// عرض نافذة الإرجاع الجزئي
-  void _showPartialRefundDialog(Sale sale) {
-    // يمكن تطوير هذه الوظيفة لاحقاً لإرجاع منتجات محددة
-    _showErrorSnackBar('الإرجاع الجزئي قيد التطوير');
-  }
-
-  /// عرض التقارير
-  void _showReports() {
-    _showErrorSnackBar('التقارير قيد التطوير');
-  }
-
-  /// عرض خيارات النسخ الاحتياطي
-  void _showBackupOptions() {
-    _showErrorSnackBar('النسخ الاحتياطي قيد التطوير');
-  }
-
-  /// تنسيق التاريخ
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -1130,6 +787,12 @@ class _DiscountDialogState extends State<_DiscountDialog> {
   }
 
   @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('تطبيق خصم'),
@@ -1138,16 +801,11 @@ class _DiscountDialogState extends State<_DiscountDialog> {
         children: [
           TextField(
             controller: _discountController,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-            ],
             decoration: InputDecoration(
-              labelText: _isPercentage
-                  ? 'نسبة الخصم (%)'
-                  : 'مبلغ الخصم (${AppConstants.currencyName})',
+              labelText: _isPercentage ? 'نسبة الخصم (%)' : 'مبلغ الخصم',
               border: const OutlineInputBorder(),
             ),
+            keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
           Row(

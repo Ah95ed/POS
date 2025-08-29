@@ -172,7 +172,7 @@ class SaleRepository {
   }
 
   /// الحصول على جميع المبيعات
-    Future<Result<List<Sale>>> getAllSales({
+  Future<Result<List<SaleModel>>> getAllSales({
     int? limit,
     int? offset,
     DateTime? fromDate,
@@ -211,7 +211,7 @@ class SaleRepository {
       }
 
       final salesResult = await db!.rawQuery(query, args);
-      final sales = <Sale>[];
+      final sales = <SaleModel>[];
 
       for (final saleMap in salesResult) {
         final saleId = saleMap[POSDatabase.saleId] as int;
@@ -224,9 +224,9 @@ class SaleRepository {
         );
 
         final items = itemsResult
-            .map((item) => SaleItem.fromMap(item))
+            .map((item) => SaleItemModel.fromMap(item))
             .toList();
-        final sale = Sale.fromMap(saleMap).copyWith(items: items);
+        final sale = SaleModel.fromMap(saleMap, items: items);
         sales.add(sale);
       }
 
@@ -237,7 +237,7 @@ class SaleRepository {
   }
 
   /// الحصول على مبيعات اليوم
-  Future<Future<Result<List<Sale>>>> getTodaySales() async {
+  Future<Result<List<SaleModel>>> getTodaySales() async {
     final today = DateTime.now();
     final startOfDay = DateTime(today.year, today.month, today.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
@@ -386,25 +386,42 @@ class SaleRepository {
   /// توليد رقم فاتورة جديد
   Future<Result<String>> generateInvoiceNumber() async {
     try {
-      final db = await DataBaseSqflite.databasesq;
+      final db = await POSDatabase.database;
 
       // الحصول على آخر رقم فاتورة
       final result = await db!.rawQuery('''
-        SELECT invoice_number FROM sales 
-        ORDER BY id DESC 
+        SELECT ${POSDatabase.saleInvoiceNumber} FROM ${POSDatabase.salesTable} 
+        ORDER BY ${POSDatabase.saleId} DESC 
         LIMIT 1
       ''');
 
       int nextNumber = 1;
       if (result.isNotEmpty) {
-        final lastInvoice = result.first['invoice_number'] as String;
+        final lastInvoice =
+            result.first[POSDatabase.saleInvoiceNumber] as String;
         // استخراج الرقم من رقم الفاتورة (مثل INV-001)
         final numberPart = lastInvoice.split('-').last;
         final lastNumber = int.tryParse(numberPart) ?? 0;
         nextNumber = lastNumber + 1;
       }
 
-      final invoiceNumber = 'INV-${nextNumber.toString().padLeft(3, '0')}';
+      // التأكد من عدم تكرار رقم الفاتورة
+      String invoiceNumber;
+      bool isUnique = false;
+      do {
+        invoiceNumber = 'INV-${nextNumber.toString().padLeft(6, '0')}';
+        final checkResult = await getSaleByInvoiceNumber(invoiceNumber);
+        if (checkResult.isSuccess && checkResult.data == null) {
+          isUnique = true;
+        } else {
+          nextNumber++;
+        }
+      } while (!isUnique && nextNumber < 999999);
+
+      if (!isUnique) {
+        return Result.error('تعذر توليد رقم فاتورة فريد');
+      }
+
       return Result.success(invoiceNumber);
     } catch (e) {
       return Result.error('خطأ في توليد رقم الفاتورة: ${e.toString()}');
@@ -455,6 +472,27 @@ class SaleRepository {
       return Result.success(result);
     } catch (e) {
       return Result.error('خطأ في استرجاع أفضل المنتجات: ${e.toString()}');
+    }
+  }
+
+  /// تحديث معرف العميل في الفاتورة
+  Future<Result<bool>> updateSaleCustomerId(int saleId, int customerId) async {
+    try {
+      final db = await POSDatabase.database;
+      if (db == null) {
+        return Result.error('خطأ في الاتصال بقاعدة البيانات');
+      }
+
+      final count = await db.update(
+        POSDatabase.salesTable,
+        {'customer_id': customerId},
+        where: '${POSDatabase.saleId} = ?',
+        whereArgs: [saleId],
+      );
+
+      return Result.success(count > 0);
+    } catch (e) {
+      return Result.error('خطأ في تحديث معرف العميل: ${e.toString()}');
     }
   }
 }

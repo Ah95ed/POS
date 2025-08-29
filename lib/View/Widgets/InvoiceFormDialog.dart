@@ -296,7 +296,7 @@ class _InvoiceFormDialogState extends State<InvoiceFormDialog> {
                               ),
                             ),
                             Text(
-                              '${_calculateTotal().toStringAsFixed(2)} ر.س',
+                              '${_calculateTotal().toStringAsFixed(2)} د.ع',
                               style: TextStyle(
                                 fontSize: context.getFontSize(16),
                                 fontWeight: FontWeight.bold,
@@ -638,7 +638,7 @@ class _ItemFormDialogState extends State<_ItemFormDialog> {
     final total = quantity * price;
 
     final item = InvoiceItemModel(
-      productId: 0, 
+      productId: 0,
       productName: _productNameController.text.trim(),
       productCode: _productCodeController.text.trim(),
       quantity: quantity,

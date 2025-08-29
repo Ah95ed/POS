@@ -6,7 +6,6 @@ import 'package:pos/Model/DashboardModel.dart';
 import 'package:pos/View/style/app_colors.dart';
 import 'package:smart_sizer/smart_sizer.dart';
 import 'package:pos/Helper/Constants/AppConstants.dart';
-import 'package:pos/Helper/Utils/DeviceUtils.dart' hide DeviceUtils;
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,26 +25,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: DeviceUtils.isMobile(context)
-          ? null
-          : AppBar(
-              backgroundColor: AppColors.accent,
-              elevation: 4,
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.refresh, color: AppColors.background),
-                  onPressed: () {
-                    context.read<DashboardProvider>().refreshDashboard();
-                  },
-                ),
-              ],
-            ),
+      appBar: _buildAppBar(context),
       body: Consumer<DashboardProvider>(
         builder: (context, dashboardProvider, child) {
           if (dashboardProvider.isLoading) {
@@ -53,97 +35,140 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           if (dashboardProvider.errorMessage.isNotEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppColors.textMain.withOpacity(0.6),
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  Text(
-                    dashboardProvider.errorMessage,
-                    style: TextStyle(fontSize: 16, color: AppColors.textMain),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  ElevatedButton(
-                    onPressed: () {
-                      dashboardProvider.refreshDashboard();
-                    },
-                    child: const Text('إعادة المحاولة'),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorWidget(context, dashboardProvider);
           }
 
-          return RefreshIndicator(
-            onRefresh: dashboardProvider.refreshDashboard,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.all(screenWidth * 0.01),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome Section
-                  _buildWelcomeSection(screenWidth, screenHeight),
-                  SizedBox(height: screenHeight * 0.02),
-
-                  // Statistics Cards
-                  _buildStatisticsSection(
-                    dashboardProvider,
-                    screenWidth,
-                    screenHeight,
-                  ),
-                  SizedBox(height: screenHeight * 0.03),
-
-                  // Sales Stats + Date Range
-                  _buildSalesStatsSection(
-                    dashboardProvider,
-                    screenWidth,
-                    screenHeight,
-                  ),
-                  SizedBox(height: screenHeight * 0.03),
-
-                  // Invoice Status distribution
-                  _buildInvoiceStatusSection(
-                    dashboardProvider,
-                    screenWidth,
-                    screenHeight,
-                  ),
-                  SizedBox(height: screenHeight * 0.03),
-
-                  // Top Customers
-                  _buildTopCustomersSection(
-                    dashboardProvider,
-                    screenWidth,
-                    screenHeight,
-                  ),
-                  SizedBox(height: screenHeight * 0.03),
-
-                  // Top Selling Items
-                  _buildTopSellingSection(
-                    dashboardProvider,
-                    screenWidth,
-                    screenHeight,
-                  ),
-                  SizedBox(height: screenHeight * 0.03),
-
-                  // Recent Transactions
-                  _buildRecentTransactionsSection(
-                    dashboardProvider,
-                    screenWidth,
-                    screenHeight,
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _buildDashboardContent(context, dashboardProvider);
         },
       ),
+    );
+  }
+
+  /// بناء شريط التطبيق
+  PreferredSizeWidget? _buildAppBar(BuildContext context) {
+    return MediaQuery.of(context).size.width < 600
+        ? null
+        : AppBar(
+            backgroundColor: AppColors.accent,
+            elevation: 4,
+            automaticallyImplyLeading: false,
+            actions: [
+              IconButton(
+                icon: Icon(Icons.refresh, color: AppColors.background),
+                onPressed: () {
+                  context.read<DashboardProvider>().refreshDashboard();
+                },
+              ),
+            ],
+          );
+  }
+
+  /// بناء widget الخطأ
+  Widget _buildErrorWidget(BuildContext context, DashboardProvider provider) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: AppColors.textMain.withOpacity(0.6),
+              ),
+              SizedBox(height: constraints.maxHeight * 0.02),
+              Text(
+                provider.errorMessage,
+                style: TextStyle(fontSize: 16, color: AppColors.textMain),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: constraints.maxHeight * 0.02),
+              ElevatedButton(
+                onPressed: () {
+                  provider.refreshDashboard();
+                },
+                child: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// بناء محتوى الشاشة الرئيسي
+  Widget _buildDashboardContent(
+    BuildContext context,
+    DashboardProvider dashboardProvider,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenHeight = constraints.maxHeight;
+        final screenWidth = constraints.maxWidth;
+
+        return RefreshIndicator(
+          onRefresh: dashboardProvider.refreshDashboard,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(screenWidth * 0.01),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section
+                _buildWelcomeSection(screenWidth, screenHeight),
+                SizedBox(height: screenHeight * 0.02),
+
+                // Statistics Cards
+                _buildStatisticsSection(
+                  dashboardProvider,
+                  screenWidth,
+                  screenHeight,
+                ),
+                SizedBox(height: screenHeight * 0.03),
+
+                // Sales Stats + Date Range
+                _buildSalesStatsSection(
+                  dashboardProvider,
+                  screenWidth,
+                  screenHeight,
+                ),
+                SizedBox(height: screenHeight * 0.03),
+
+                // Invoice Status distribution
+                _buildInvoiceStatusSection(
+                  dashboardProvider,
+                  screenWidth,
+                  screenHeight,
+                ),
+                SizedBox(height: screenHeight * 0.03),
+
+                // Top Customers
+                _buildTopCustomersSection(
+                  dashboardProvider,
+                  screenWidth,
+                  screenHeight,
+                ),
+                SizedBox(height: screenHeight * 0.03),
+
+                // Top Selling Items
+                _buildTopSellingSection(
+                  dashboardProvider,
+                  screenWidth,
+                  screenHeight,
+                ),
+                SizedBox(height: screenHeight * 0.03),
+
+                // Recent Transactions
+                _buildRecentTransactionsSection(
+                  dashboardProvider,
+                  screenWidth,
+                  screenHeight,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -670,6 +695,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         SizedBox(height: screenHeight * 0.02),
         Container(
+          height: 300,
           decoration: BoxDecoration(
             color: AppColors.card,
             borderRadius: BorderRadius.circular(15),
@@ -683,70 +709,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           padding: EdgeInsets.all(screenWidth * 0.02),
           child: topItems.isEmpty
-              ? Padding(
-                  padding: EdgeInsets.all(screenWidth * 0.02),
-                  child: Center(
-                    child: Text(
-                      'لا توجد منتجات',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textMain.withOpacity(0.7),
-                      ),
-                    ),
+              ? Center(
+                  child: Text(
+                    'لا توجد منتجات',
+                    style: TextStyle(fontSize: 14, color: AppColors.textMain),
                   ),
                 )
-              : BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY:
-                        topItems
-                            .map((e) => e.quantitySold.toDouble())
-                            .fold<double>(0, (p, c) => c > p ? c : p) +
-                        2,
-                    borderData: FlBorderData(show: false),
-                    titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 28,
+              : SizedBox(
+                  height: 250,
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      maxY:
+                          topItems
+                              .map((e) => e.quantitySold.toDouble())
+                              .fold<double>(0, (p, c) => c > p ? c : p) +
+                          2,
+                      borderData: FlBorderData(show: false),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 28,
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            getTitlesWidget: (value, meta) {
+                              final index = value.toInt();
+                              if (index < 0 || index >= topItems.length) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  topItems[index].code,
+                                  style: const TextStyle(fontSize: 10),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
                         ),
                       ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            final index = value.toInt();
-                            if (index < 0 || index >= topItems.length)
-                              return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                topItems[index].code,
-                                style: const TextStyle(fontSize: 10),
+                      barGroups: [
+                        for (int i = 0; i < topItems.length; i++)
+                          BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: topItems[i].quantitySold.toDouble(),
+                                color: AppColors.accent,
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
+                            ],
+                          ),
+                      ],
                     ),
-                    barGroups: [
-                      for (int i = 0; i < topItems.length; i++)
-                        BarChartGroupData(
-                          x: i,
-                          barRods: [
-                            BarChartRodData(
-                              toY: topItems[i].quantitySold.toDouble(),
-                              color: AppColors.accent,
-                            ),
-                          ],
-                        ),
-                    ],
                   ),
                 ),
         ),

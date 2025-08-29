@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Model/SaleModel.dart';
 
 /// حوار نموذج العميل للإضافة والتعديل
@@ -50,10 +51,11 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
     if (widget.customer != null) {
       final customer = widget.customer!;
       _nameController.text = customer.name;
-      _phoneController.text = customer.phone ?? '';
+      _phoneController.text = customer.phone;
       _emailController.text = customer.email ?? '';
       _addressController.text = customer.address ?? '';
-      _pointsController.text = customer.points.toString();
+      // _pointsController.text = customer.points.toString(); // TODO: إضافة points للـ CustomerModel
+      _pointsController.text = '0'; // مؤقتاً
       _isVip = customer.isVip;
     } else {
       _pointsController.text = '0';
@@ -317,7 +319,7 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
                       _isVip = value;
                     });
                   },
-                  activeColor: Colors.amber[700],
+                  activeThumbColor: Colors.amber[700],
                 ),
               ],
             ),
@@ -386,16 +388,13 @@ class _CustomerFormDialogState extends State<CustomerFormDialog> {
       final customer = CustomerModel(
         id: widget.customer?.id,
         name: _nameController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
+        phone: _phoneController.text.trim(),
         email: _emailController.text.trim().isEmpty
             ? null
             : _emailController.text.trim(),
         address: _addressController.text.trim().isEmpty
             ? null
             : _addressController.text.trim(),
-        points: int.tryParse(_pointsController.text) ?? 0,
         totalPurchases: widget.customer?.totalPurchases ?? 0.0,
         isVip: _isVip,
         createdAt: widget.customer?.createdAt ?? DateTime.now(),

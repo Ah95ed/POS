@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:pos/Helper/DataBase/DataBaseSqflite.dart';
 import 'package:pos/Helper/DataBase/POSDatabase.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Model/ProductModel.dart';
 import 'package:pos/Model/SaleModel.dart';
 import 'package:pos/Repository/CustomerRepository.dart';

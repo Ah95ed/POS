@@ -10,8 +10,12 @@ import 'package:pos/Controller/SettingsProvider.dart';
 import 'package:pos/Controller/CustomerProvider.dart';
 import 'package:pos/Controller/InvoiceProvider.dart';
 import 'package:pos/Controller/DebtProvider.dart';
+import 'package:pos/Controller/UserProvider.dart';
+import 'package:pos/Controller/SupplierProvider.dart';
+import 'package:pos/Controller/PurchaseProvider.dart';
 import 'package:pos/Helper/Locale/LanguageController.dart';
 import 'package:pos/Helper/Service/Service.dart';
+import 'package:pos/View/Screens/LoginScreen.dart';
 import 'package:pos/View/Screens/MainLayout.dart';
 import 'package:provider/provider.dart';
 import 'package:smart_sizer/smart_sizer.dart';
@@ -38,6 +42,9 @@ Future<void> main() async {
             ChangeNotifierProvider(create: (_) => CustomerProvider()),
             ChangeNotifierProvider(create: (_) => InvoiceProvider()),
             ChangeNotifierProvider(create: (_) => DebtProvider()),
+            ChangeNotifierProvider(create: (_) => UserProvider()),
+            ChangeNotifierProvider(create: (_) => SupplierProvider()),
+            ChangeNotifierProvider(create: (_) => PurchaseProvider()),
           ],
           child: const MyApp(),
           // child: DevicePreview(

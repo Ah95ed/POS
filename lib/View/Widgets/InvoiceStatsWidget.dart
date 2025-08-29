@@ -145,7 +145,7 @@ class InvoiceStatsWidget extends StatelessWidget {
             ),
           ),
           Text(
-            '${amount.toStringAsFixed(2)} ر.س',
+            '${amount.toStringAsFixed(2)} د.ع',
             style: TextStyle(
               fontSize: context.getFontSize(13),
               fontWeight: FontWeight.w600,
@@ -254,7 +254,7 @@ class InvoiceStatsWidget extends StatelessWidget {
           ),
           if (amount > 0)
             Text(
-              '${amount.toStringAsFixed(0)} ر.س',
+              '${amount.toStringAsFixed(0)} د.ع',
               style: TextStyle(
                 fontSize: context.getFontSize(10),
                 color: Colors.grey[600],

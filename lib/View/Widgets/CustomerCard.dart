@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pos/Model/SaleModel.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Helper/Constants/AppConstants.dart';
 import 'package:smart_sizer/smart_sizer.dart';
 
@@ -170,14 +170,14 @@ class CustomerCard extends StatelessWidget {
               const SizedBox(height: 12),
 
               // معلومات الاتصال
-              if (customer.phone != null || customer.email != null)
+              if (customer.phone.isNotEmpty || customer.email != null)
                 Column(
                   children: [
-                    if (customer.phone != null)
+                    if (customer.phone.isNotEmpty)
                       _buildInfoRow(
                         Icons.phone,
                         'الهاتف',
-                        customer.phone!,
+                        customer.phone,
                         Colors.green,
                       ),
 
@@ -216,12 +216,12 @@ class CustomerCard extends StatelessWidget {
 
                   const SizedBox(width: 12),
 
-                  // النقاط
+                  // النقاط (مؤقتاً معطل حتى إضافة points للـ CustomerModel)
                   Expanded(
                     child: _buildStatCard(
-                      'النقاط',
-                      '${customer.points}',
-                      Icons.stars,
+                      'المشتريات',
+                      AppConstants.formatCurrency(customer.totalPurchases),
+                      Icons.shopping_bag,
                       Colors.amber,
                     ),
                   ),

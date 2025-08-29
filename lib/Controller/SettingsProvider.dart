@@ -78,7 +78,7 @@ class SettingsProvider extends ChangeNotifier {
   List<String> get supportedLanguages => ['ar', 'en'];
 
   // قائمة العملات المدعومة
-  List<String> get supportedCurrencies => ['دينار', 'ريال', 'دولار', 'يورو'];
+  List<String> get supportedCurrencies => ['دينار', 'دولار', 'يورو', 'ريال'];
 
   // الحصول على النص المترجم
   String translate(String key) {
@@ -281,9 +281,7 @@ class SettingsProvider extends ChangeNotifier {
         ),
       ),
       chipTheme: base.chipTheme.copyWith(
-        backgroundColor: isDark
-            ? Colors.white
-            : Colors.black,
+        backgroundColor: isDark ? Colors.white : Colors.black,
         selectedColor: AppColors.accent,
         labelStyle: TextStyle(color: AppColors.textMain),
       ),

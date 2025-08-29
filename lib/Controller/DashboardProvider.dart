@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pos/Helper/DataBase/DataBaseSqflite.dart';
 import 'package:pos/Helper/DataBase/POSDatabase.dart';
 import 'package:pos/Helper/Log/LogApp.dart';
+import 'package:pos/Model/CustomerModel.dart';
 import 'package:pos/Model/DashboardModel.dart';
 import 'package:pos/Helper/Constants/AppConstants.dart';
 import 'package:pos/Model/SaleModel.dart';
