@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/Helper/Log/LogApp.dart';
 import 'package:provider/provider.dart';
 import 'package:pos/Controller/SaleProvider.dart';
 import 'package:pos/Model/ProductModel.dart';
@@ -204,11 +205,93 @@ class _SalesScreenState extends State<SalesScreen> {
 
   /// بناء شبكة المنتجات
   Widget _buildProductGrid(SaleProvider provider, double width) {
-    if (provider.filteredProducts.isEmpty) {
-      return const Center(
-        child: Text(
-          'لا توجد منتجات متاحة',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+    if (provider.filteredProducts.isEmpty &&
+        provider.availableProducts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.orange[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange[200]!, width: 2),
+                ),
+                child: Icon(
+                  Icons.inventory_2_outlined,
+                  size: 64,
+                  color: Colors.orange[400],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'لا توجد منتجات متاحة',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'أضف منتجات في قسم إدارة المنتجات أولاً',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () {
+                  // يمكن إضافة التنقل لشاشة إدارة المنتجات
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'انتقل إلى قسم إدارة المنتجات لإضافة منتجات جديدة',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('إضافة منتجات'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange[400],
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (provider.filteredProducts.isEmpty &&
+        provider.availableProducts.isNotEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 16),
+              Text(
+                'لا توجد نتائج للبحث',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'جرب البحث بكلمات أخرى أو امسح البحث',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -365,22 +448,80 @@ class _SalesScreenState extends State<SalesScreen> {
   /// بناء قائمة عناصر الفاتورة الحالية
   Widget _buildCurrentSaleItems(SaleProvider provider, double width) {
     if (provider.currentSaleItems.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shopping_cart_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'لا توجد عناصر في الفاتورة',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'ابدأ بإضافة منتجات',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Container(
+              //   padding: const EdgeInsets.all(20),
+              //   decoration: BoxDecoration(
+              //     color: Colors.blue[50],
+              //     borderRadius: BorderRadius.circular(16),
+              //     border: Border.all(color: Colors.blue[200]!, width: 2),
+              //   ),
+              //   child: Icon(
+              //     Icons.shopping_cart_outlined,
+              //     size: 64,
+              //     color: Colors.blue[400],
+              //   ),
+              // ),
+              //  SizedBox(height: 24),
+              Text(
+                'الفاتورة فارغة',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              // const SizedBox(height: 12),
+              // Text(
+              //   'ابدأ بإضافة منتجات للفاتورة',
+              //   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              //   textAlign: TextAlign.center,
+              // ),
+              // const SizedBox(height: 20),
+            //   Container(
+            //     padding: const EdgeInsets.all(16),
+            //     decoration: BoxDecoration(
+            //       color: Colors.green[50],
+            //       borderRadius: BorderRadius.circular(12),
+            //       border: Border.all(color: Colors.green[200]!, width: 1),
+            //     ),
+            //     child: Column(
+            //       children: [
+            //         Row(
+            //           mainAxisSize: MainAxisSize.min,
+            //           children: [
+            //             Icon(
+            //               Icons.lightbulb_outline,
+            //               color: Colors.green[600],
+            //               size: 20,
+            //             ),
+            //             const SizedBox(width: 8),
+            //             Text(
+            //               'طرق إضافة المنتجات:',
+            //               style: TextStyle(
+            //                 fontWeight: FontWeight.bold,
+            //                 color: Colors.green[700],
+            //               ),
+            //             ),
+            //           ],
+            //         ),
+            //         const SizedBox(height: 12),
+            //         Text(
+            //           '• امسح الباركود أو اكتب كود المنتج\n• اختر من قائمة المنتجات أدناه\n• ابحث عن المنتج بالاسم',
+            //           style: TextStyle(color: Colors.green[600]),
+            //           textAlign: TextAlign.center,
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            //
+            ],
+          ),
         ),
       );
     }
@@ -628,7 +769,7 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   /// عرض نافذة الدفع
-  void _showPaymentDialog(SaleProvider provider) {
+  void _showPaymentDialog(SaleProvider provider) async {
     final TextEditingController paidAmountController = TextEditingController();
     // تعيين المبلغ الافتراضي للإجمالي
     paidAmountController.text = provider.total.toStringAsFixed(2);
@@ -656,6 +797,7 @@ class _SalesScreenState extends State<SalesScreen> {
                 border: OutlineInputBorder(),
               ),
               onChanged: (value) {
+                logError("message === $value");
                 final amount = double.tryParse(value) ?? 0.0;
                 provider.updatePaidAmount(amount);
               },
@@ -694,12 +836,28 @@ class _SalesScreenState extends State<SalesScreen> {
                           if (success) {
                             _showSuccessSnackBar('تم إتمام البيع بنجاح');
                           } else {
+                            logInfo("$success");
                             _showErrorSnackBar(provider.errorMessage);
                           }
                         });
                       }
-                    : null,
-                child: const Text('دفع'),
+                    : () {
+                        // عرض رسالة توضيحية عن سبب عدم إمكانية إتمام البيع
+                        _showErrorSnackBar(provider.cannotCompleteSaleReason);
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: provider.canCompleteSale
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey[300],
+                ),
+                child: Text(
+                  provider.canCompleteSale ? 'دفع' : 'لا يمكن الدفع',
+                  style: TextStyle(
+                    color: provider.canCompleteSale
+                        ? Colors.white
+                        : Colors.grey[600],
+                  ),
+                ),
               );
             },
           ),

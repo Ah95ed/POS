@@ -6,9 +6,7 @@ import 'package:pos/Helper/Result.dart';
 /// مستودع المبيعات - Sale Repository
 /// يحتوي على جميع العمليات المتعلقة بقاعدة البيانات للمبيعات
 class SaleRepository {
-  final DataBaseSqflite _database;
-
-  SaleRepository(this._database);
+  SaleRepository();
 
   /// إنشاء جداول المبيعات
   Future<void> createSalesTables() async {
@@ -81,14 +79,64 @@ class SaleRepository {
 
         // تحديث كميات المنتجات في المخزون
         for (final item in sale.items) {
-          await txn.rawUpdate(
+          // تنظيف كود المنتج من المسافات الإضافية
+          final cleanProductCode = item.productCode.trim();
+
+          if (cleanProductCode.isEmpty) {
+            throw Exception('كود المنتج فارغ للمنتج: ${item.productName}');
+          }
+
+          // التحقق من توفر الكمية أولاً باستخدام كود المنتج
+          var productQuantityResult = await txn.rawQuery(
+            'SELECT ${POSDatabase.itemId}, ${POSDatabase.itemQuantity}, ${POSDatabase.itemName} FROM ${POSDatabase.itemsTable} WHERE TRIM(${POSDatabase.itemCode}) = ?',
+            [cleanProductCode],
+          );
+
+          if (productQuantityResult.isEmpty) {
+            // البحث مرة أخرى بدون حساسية للأحرف الكبيرة/الصغيرة
+            final caseInsensitiveResult = await txn.rawQuery(
+              'SELECT ${POSDatabase.itemId}, ${POSDatabase.itemQuantity}, ${POSDatabase.itemName}, ${POSDatabase.itemCode} FROM ${POSDatabase.itemsTable} WHERE UPPER(TRIM(${POSDatabase.itemCode})) = UPPER(?)',
+              [cleanProductCode],
+            );
+
+            if (caseInsensitiveResult.isNotEmpty) {
+              final actualCode =
+                  caseInsensitiveResult.first[POSDatabase.itemCode] as String;
+              throw Exception(
+                'عدم تطابق في كود المنتج: ${item.productName}\nالكود المُدخل: "$cleanProductCode"\nالكود الصحيح: "$actualCode"\nتحقق من كتابة الكود بالضبط كما هو محفوظ',
+              );
+            }
+
+            throw Exception(
+              'المنتج غير موجود في قاعدة البيانات: ${item.productName} (كود: $cleanProductCode)\nتحقق من:\n1. وجود المنتج في قائمة المنتجات\n2. صحة كود المنتج\n3. عدم حذف المنتج',
+            );
+          }
+
+          final productData = productQuantityResult.first;
+          final currentQuantity = productData[POSDatabase.itemQuantity] as int;
+          final productName = productData[POSDatabase.itemName] as String;
+
+          if (currentQuantity < item.quantity) {
+            throw Exception(
+              'الكمية المطلوبة من $productName (${item.quantity}) أكبر من المتاح ($currentQuantity)\nالمتاح في المخزون: $currentQuantity\nالمطلوب: ${item.quantity}',
+            );
+          }
+
+          // تحديث الكمية باستخدام كود المنتج المُنظف
+          final updatedRows = await txn.rawUpdate(
             '''
             UPDATE ${POSDatabase.itemsTable} 
             SET ${POSDatabase.itemQuantity} = ${POSDatabase.itemQuantity} - ? 
-            WHERE ${POSDatabase.itemId} = ?
+            WHERE TRIM(${POSDatabase.itemCode}) = ?
           ''',
-            [item.quantity, item.productId],
+            [item.quantity, cleanProductCode],
           );
+
+          if (updatedRows == 0) {
+            throw Exception(
+              'فشل في تحديث كمية المنتج: $productName (كود: $cleanProductCode)\nقد يكون المنتج محذوف أو تم تعديل كوده',
+            );
+          }
         }
       });
 

@@ -420,4 +420,73 @@ class ProductRepository {
       return Result.error('خطأ في تحديث حد التنبيه: ${e.toString()}');
     }
   }
+
+  /// تقليل كمية المنتج (للمبيعات)
+  Future<Result<bool>> reduceProductQuantity(
+    int productId,
+    int quantityToReduce,
+  ) async {
+    try {
+      // الحصول على المنتج الحالي
+      final allProductsResult = await getAllProducts();
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final product = allProductsResult.data!
+          .where((p) => p.id == productId)
+          .firstOrNull;
+
+      if (product == null) {
+        return Result.error('لم يتم العثور على المنتج');
+      }
+
+      // التحقق من توفر الكمية
+      if (product.quantity < quantityToReduce) {
+        return Result.error(
+          'الكمية المطلوبة ($quantityToReduce) أكبر من المتاح (${product.quantity})',
+        );
+      }
+
+      // حساب الكمية الجديدة
+      final newQuantity = product.quantity - quantityToReduce;
+
+      // تحديث الكمية
+      final updatedProduct = product.copyWith(quantity: newQuantity);
+      return await updateProduct(updatedProduct);
+    } catch (e) {
+      return Result.error('خطأ في تقليل كمية المنتج: ${e.toString()}');
+    }
+  }
+
+  /// زيادة كمية المنتج (للمرتجعات أو التزويد)
+  Future<Result<bool>> increaseProductQuantity(
+    int productId,
+    int quantityToAdd,
+  ) async {
+    try {
+      // الحصول على المنتج الحالي
+      final allProductsResult = await getAllProducts();
+      if (allProductsResult.isError) {
+        return Result.error(allProductsResult.error!);
+      }
+
+      final product = allProductsResult.data!
+          .where((p) => p.id == productId)
+          .firstOrNull;
+
+      if (product == null) {
+        return Result.error('لم يتم العثور على المنتج');
+      }
+
+      // حساب الكمية الجديدة
+      final newQuantity = product.quantity + quantityToAdd;
+
+      // تحديث الكمية
+      final updatedProduct = product.copyWith(quantity: newQuantity);
+      return await updateProduct(updatedProduct);
+    } catch (e) {
+      return Result.error('خطأ في زيادة كمية المنتج: ${e.toString()}');
+    }
+  }
 }

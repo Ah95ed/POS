@@ -252,7 +252,7 @@ class _MainLayoutState extends State<MainLayout> {
           style: TextStyle(
             color: isSelected ? AppColors.accent : AppColors.textMain,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: context.getFontSize(8),
+            fontSize: context.getFontSize(16),
           ),
         ),
         selected: isSelected,
