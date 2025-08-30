@@ -2,7 +2,7 @@ name: POS android CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ release ]
 
 jobs:
   build_android:
@@ -27,7 +27,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.35.1'
+          flutter-version: '3.35.2'
 
       
 

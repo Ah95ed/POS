@@ -2,7 +2,7 @@ name: POS windows
 
 on:
   push:
-    branches: [ main ]
+    branches: [ release ]
 
 jobs:
   build_windows:
@@ -16,7 +16,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version: '3.29.1'
+          flutter-version: '3.29.2'
           
       - name: download packages 
         run: flutter clean
