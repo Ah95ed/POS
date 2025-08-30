@@ -446,9 +446,9 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: context.getWidth(3)),
         decoration: BoxDecoration(
-          color: AppColors.accent.withOpacity(0.1),
+          color: AppColors.accent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+          border: Border.all(color: AppColors.accent),
         ),
         child: DropdownButton<String>(
           value: _selectedLanguage,
@@ -473,7 +473,7 @@ class _SettingsScreenState extends State<SettingsScreen>
               child: Row(
                 children: [
                   Text(
-                    '🇸🇦',
+                    'IQ',
                     style: TextStyle(fontSize: context.getFontSize(16)),
                   ),
                   SizedBox(width: context.getWidth(2)),

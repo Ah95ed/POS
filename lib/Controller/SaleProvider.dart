@@ -8,6 +8,14 @@ import 'package:pos/Repository/ProductRepository.dart';
 import 'package:pos/Repository/CustomerRepository.dart';
 import 'package:pos/Helper/Result.dart';
 
+/// نتيجة التحقق من المخزون
+class StockValidationResult {
+  final bool isValid;
+  final String message;
+
+  StockValidationResult(this.isValid, this.message);
+}
+
 /// مزود حالة نقطة البيع - Sale Provider
 /// يدير جميع العمليات والحالات المتعلقة بنقطة البيع
 class SaleProvider extends ChangeNotifier {
@@ -38,8 +46,11 @@ class SaleProvider extends ChangeNotifier {
   List<CustomerModel> _customers = [];
   List<CustomerModel> _filteredCustomers = [];
 
+  // المنتجات منخفضة المخزون
+  List<ProductModel> _lowStockProducts = [];
+
   SaleProvider()
-    : _saleRepository = SaleRepository(DataBaseSqflite()),
+    : _saleRepository = SaleRepository(),
       _productRepository = ProductRepository(DataBaseSqflite()),
       _customerRepository = CustomerRepository() {
     _initializeData();
@@ -65,6 +76,7 @@ class SaleProvider extends ChangeNotifier {
   String get productSearchQuery => _productSearchQuery;
   List<CustomerModel> get customers => _customers;
   List<CustomerModel> get filteredCustomers => _filteredCustomers;
+  List<ProductModel> get lowStockProducts => _lowStockProducts;
 
   // حسابات الفاتورة
   double get subtotal {
@@ -93,6 +105,19 @@ class SaleProvider extends ChangeNotifier {
 
     // التحقق من أن المبلغ المدفوع كافٍ
     return _paidAmount >= total;
+  }
+
+  /// سبب عدم إمكانية إتمام البيع
+  String get cannotCompleteSaleReason {
+    if (_currentSaleItems.isEmpty) {
+      return 'أضف منتجات إلى الفاتورة أولاً';
+    }
+
+    if (_paidAmount < total) {
+      return 'المبلغ المدفوع (${_paidAmount.toStringAsFixed(2)}) أقل من الإجمالي (${total.toStringAsFixed(2)})';
+    }
+
+    return '';
   }
 
   int get itemCount => _currentSaleItems.length;
@@ -352,10 +377,12 @@ class SaleProvider extends ChangeNotifier {
   Future<bool> completeSale() async {
     if (!canCompleteSale) {
       if (_currentSaleItems.isEmpty) {
-        _setError('لا يمكن إتمام البيع: لا توجد منتجات في الفاتورة');
+        _setError(
+          'لا يمكن إتمام البيع: أضف منتجات إلى الفاتورة أولاً\n\nلإضافة منتجات:\n• استخدم قارئ الباركود أو اكتب كود المنتج\n• اختر المنتجات من القائمة المتاحة',
+        );
       } else if (_paidAmount < total) {
         _setError(
-          'لا يمكن إتمام البيع: المبلغ المدفوع (${_paidAmount.toStringAsFixed(2)}) أقل من الإجمالي (${total.toStringAsFixed(2)})',
+          'لا يمكن إتمام البيع: المبلغ المدفوع غير كافٍ\n\nالمطلوب: ${total.toStringAsFixed(2)} ريال\nالمدفوع: ${_paidAmount.toStringAsFixed(2)} ريال\nالنقص: ${(total - _paidAmount).toStringAsFixed(2)} ريال',
         );
       } else {
         _setError('لا يمكن إتمام البيع. تحقق من البيانات والمبلغ المدفوع');
@@ -372,23 +399,11 @@ class SaleProvider extends ChangeNotifier {
         return false;
       }
 
-      // التحقق من توفر المنتجات قبل البيع
-      for (final item in _currentSaleItems) {
-        final productResult = await _productRepository.getProductByCode(
-          item.productCode,
-        );
-        if (productResult.isError || productResult.data == null) {
-          _setError('المنتج ${item.productName} غير موجود');
-          return false;
-        }
-
-        final product = productResult.data!;
-        if (product.quantity < item.quantity) {
-          _setError(
-            'الكمية المطلوبة من ${item.productName} غير متوفرة. المتاح: ${product.quantity}',
-          );
-          return false;
-        }
+      // التحقق من توفر المنتجات والكميات قبل البيع
+      final stockValidation = await _validateStock();
+      if (!stockValidation.isValid) {
+        _setError(stockValidation.message);
+        return false;
       }
 
       // إنشاء الفاتورة
@@ -425,6 +440,10 @@ class SaleProvider extends ChangeNotifier {
         return false;
       }
 
+      // تسجيل نجاح العملية
+      debugPrint('تم حفظ الفاتورة رقم: ${saleModel.invoiceNumber}');
+      debugPrint('تم تحديث المخزون لـ ${saleModel.items.length} منتج');
+
       // حفظ بيانات العميل إذا تم إدخالها
       if (_customerName != null && _customerName!.isNotEmpty) {
         await _saveCustomerData(saveResult.data!);
@@ -437,6 +456,9 @@ class SaleProvider extends ChangeNotifier {
       await loadAvailableProducts();
       await loadRecentSales();
       await loadSalesStats();
+
+      // التحقق من المنتجات منخفضة المخزون
+      await _checkLowStockProducts();
 
       _clearError();
       return true;
@@ -732,6 +754,79 @@ class SaleProvider extends ChangeNotifier {
     } catch (e) {
       _setError('خطأ في تحديث رقم الفاتورة: ${e.toString()}');
       return false;
+    }
+  }
+
+  /// التحقق من توفر المخزون قبل إتمام البيع
+  Future<StockValidationResult> _validateStock() async {
+    try {
+      if (_currentSaleItems.isEmpty) {
+        return StockValidationResult(false, 'لا توجد منتجات في الفاتورة');
+      }
+
+      for (final item in _currentSaleItems) {
+        // التحقق من وجود كود المنتج وتنظيفه
+        final cleanProductCode = item.productCode.trim();
+        if (cleanProductCode.isEmpty) {
+          return StockValidationResult(
+            false,
+            'كود المنتج فارغ للمنتج: ${item.productName}',
+          );
+        }
+
+        // البحث عن المنتج بالكود
+        final productResult = await _productRepository.getProductByCode(
+          cleanProductCode,
+        );
+
+        if (productResult.isError) {
+          return StockValidationResult(
+            false,
+            'خطأ في البحث عن المنتج ${item.productName}: ${productResult.error}',
+          );
+        }
+
+        if (productResult.data == null) {
+          return StockValidationResult(
+            false,
+            'المنتج غير موجود في قاعدة البيانات: ${item.productName} (كود: $cleanProductCode)\nتحقق من:\n1. إضافة المنتج في قائمة المنتجات أولاً\n2. صحة كود المنتج\n3. عدم حذف المنتج',
+          );
+        }
+
+        final product = productResult.data!;
+        if (product.quantity < item.quantity) {
+          return StockValidationResult(
+            false,
+            'الكمية المطلوبة من ${item.productName} (${item.quantity}) أكبر من المتاح (${product.quantity})\nالمتاح: ${product.quantity}\nالمطلوب: ${item.quantity}',
+          );
+        }
+      }
+      return StockValidationResult(true, 'تم التحقق من المخزون بنجاح');
+    } catch (e) {
+      return StockValidationResult(
+        false,
+        'خطأ في التحقق من المخزون: ${e.toString()}',
+      );
+    }
+  }
+
+  /// التحقق من المنتجات منخفضة المخزون
+  Future<void> _checkLowStockProducts() async {
+    try {
+      final lowStockResult = await _productRepository.getLowStockProducts();
+      if (lowStockResult.isSuccess && lowStockResult.data!.isNotEmpty) {
+        // إظهار تنبيه للمنتجات منخفضة المخزون
+        final lowStockNames = lowStockResult.data!
+            .map((p) => p.name)
+            .join(', ');
+        debugPrint('تنبيه: منتجات منخفضة المخزون: $lowStockNames');
+
+        // يمكن إضافة إشعار للمستخدم هنا
+        _lowStockProducts = lowStockResult.data!;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('خطأ في فحص المنتجات منخفضة المخزون: ${e.toString()}');
     }
   }
 
